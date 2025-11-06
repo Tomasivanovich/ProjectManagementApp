@@ -39,56 +39,69 @@ Una aplicación móvil desarrollada con React Native y Expo para la gestión efi
 
   Plataforma: Android, iOS
 
-# Estructura de projecto
+# Descripción Detallada de Carpetas
 
-src/
-├── components/
-│   ├── auth/                 # Componentes de autenticación
-│   │   ├── AuthLoading.jsx
-│   │   ├── GoogleLoginButton.jsx
-│   │   ├── LoginScreen.jsx
-│   │   └── RegisterScreen.jsx
-│   ├── common/               # Componentes reutilizables
-│   │   ├── ErrorMessage.jsx
-│   │   ├── Header.jsx
-│   │   └── Loading.jsx
-│   ├── projects/            # Gestión de proyectos
-│   │   ├── CreateProject.jsx
-│   │   ├── EditProject.jsx
-│   │   ├── ProjectDetail.jsx
-│   │   ├── ProjectList.jsx
-│   │   └── ProjectMembers.jsx
-│   ├── tasks/               # Gestión de tareas
-│   │   ├── CreateTask.jsx
-│   │   ├── EditTask.jsx
-│   │   ├── TaskCard.jsx
-│   │   ├── TaskDetail.jsx
-│   │   └── TaskList.jsx
-│   └── users/               # Gestión de usuarios
-│       ├── EditProfile.jsx
-│       ├── ProfileScreen.jsx
-│       └── UserList.jsx
-├── contexts/                # Estados globales
-│   ├── AuthContext.jsx
-│   ├── ProjectContext.jsx
-│   └── ThemeContext.jsx
-├── navigation/              # Configuración de navegación
-│   ├── AppNavigator.jsx
-│   ├── AuthNavigator.jsx
-│   └── MainNavigator.jsx
-├── services/                # Servicios API
-│   ├── api.js
-│   ├── auth.js
-│   ├── oauth.js
-│   ├── projects.js
-│   ├── tasks.js
-│   └── users.js
-├── styles/                  # Estilos y temas
-│   ├── common.js
-│   └── themes.js
-└── utils/                   # Utilidades
-    ├── constants.js
-    └── helpers.js
+/components/ - Componentes reutilizables organizados por funcionalidad
+
+auth/ - Componentes de autenticación (LoginScreen, RegisterScreen, etc.)
+
+common/ - Componentes comunes (Loading, ErrorMessage, Header, etc.)
+
+projects/ - Componentes de gestión de proyectos
+
+tasks/ - Componentes de gestión de tareas
+
+users/ - Componentes de gestión de usuarios
+
+/contexts/ - Contextos de React para el manejo de estado global
+
+AuthContext.jsx - Estado de autenticación y usuario
+
+ProjectContext.jsx - Estado de proyectos
+
+ThemeContext.jsx - Estado de temas y preferencias
+
+/navigation/ - Configuración de navegación
+
+AppNavigator.jsx - Navegador principal
+
+AuthNavigator.jsx - Navegador de autenticación
+
+MainNavigator.jsx - Navegador de la app principal
+
+/services/ - Servicios API y rutas
+
+api.js - Configuración base de Axios e interceptores
+
+auth.js - Servicios de autenticación (login, registro, logout)
+
+projects.js - Operaciones CRUD de proyectos
+
+tasks.js - Operaciones CRUD de tareas
+
+users.js - Operaciones de usuarios y perfiles
+
+/styles/ - Estilos y temas
+
+common.js - Estilos base y componentes comunes
+
+themes.js - Definiciones de temas (colores, tipografías, etc.)
+
+/utils/ - Funciones de utilidad y helpers
+
+constants.js - Constantes y configuraciones globales
+
+helpers.js - Funciones auxiliares y formateadores
+
+/hooks/ - Hooks personalizados de React
+
+(Para futuros hooks personalizados)
+
+/assets/ - Archivos estáticos como imágenes y fuentes
+
+Iconos de la aplicación
+
+Imágenes de splash screen
 
 # Instalación y Configuración
 Prerrequisitos
