@@ -4,17 +4,20 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Alert,
   TouchableOpacity,
   RefreshControl,
   Modal,
   TextInput,
+  Dimensions,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import tasksService from "../../services/tasks";
 import { useAuth } from "../../contexts/AuthContext";
 import Loading from "../common/Loading";
 import ErrorMessage from "../common/ErrorMessage";
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
 
 const TaskDetail = () => {
   const route = useRoute();
@@ -29,12 +32,6 @@ const TaskDetail = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
-  useEffect(() => {
-    if (task) {
-      console.log("Tarea recibida en TaskDetail:", task);
-    }
-  }, [task]);
-
   const loadTask = async () => {
     try {
       setError(null);
@@ -45,7 +42,6 @@ const TaskDetail = () => {
       const response = await tasksService.getTask(taskId);
       setTask(response.data || response);
     } catch (err) {
-      // MEJORADO: Manejo de errores más específico
       if (err.response?.status === 403) {
         setError("No tienes permisos para ver esta tarea");
       } else if (err.response?.status === 404) {
@@ -53,7 +49,6 @@ const TaskDetail = () => {
       } else {
         setError(err.message || "Error al cargar la tarea");
       }
-      console.error("Error loading task:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -69,58 +64,29 @@ const TaskDetail = () => {
     loadTask();
   };
 
-  // CORREGIDO: Funciones de permisos mejoradas
   const canEditTask = () => {
     if (!task || !user) return false;
-
-    // Admin global siempre puede editar
     if (user.rol_global === "admin") return true;
-
-    // Creador de la tarea puede editar
     if (task.id_creador === user.id_usuario) return true;
-
-    // Líder o creador del proyecto pueden editar
-    if (task.rol_proyecto === "lider" || task.rol_proyecto === "creador")
-      return true;
-
+    if (task.rol_proyecto === "lider" || task.rol_proyecto === "creador") return true;
     return false;
   };
 
   const canChangeStatus = () => {
     if (!task || !user) return false;
-
-    // Admin global siempre puede cambiar estado
     if (user.rol_global === "admin") return true;
-
-    // Creador de la tarea puede cambiar estado
     if (task.id_creador === user.id_usuario) return true;
-
-    // Persona asignada puede cambiar estado
     if (task.id_asignado === user.id_usuario) return true;
-
-    // Líder o creador del proyecto pueden cambiar estado
-    if (task.rol_proyecto === "lider" || task.rol_proyecto === "creador")
-      return true;
-
+    if (task.rol_proyecto === "lider" || task.rol_proyecto === "creador") return true;
     return false;
   };
 
   const canViewTask = () => {
     if (!task || !user) return false;
-
-    // Admin global siempre puede ver
     if (user.rol_global === "admin") return true;
-
-    // Creador de la tarea puede ver
     if (task.id_creador === user.id_usuario) return true;
-
-    // Persona asignada puede ver
     if (task.id_asignado === user.id_usuario) return true;
-
-    // Líder o creador del proyecto pueden ver
-    if (task.rol_proyecto === "lider" || task.rol_proyecto === "creador")
-      return true;
-
+    if (task.rol_proyecto === "lider" || task.rol_proyecto === "creador") return true;
     return false;
   };
 
@@ -137,21 +103,10 @@ const TaskDetail = () => {
 
   const handleStatusChange = async (newStatus) => {
     try {
-      // CORREGIDO: Usar el endpoint correcto
       await tasksService.updateTaskStatus(taskId, { estado: newStatus });
       setTask((prev) => ({ ...prev, estado: newStatus }));
-      Alert.alert("Éxito", `Tarea marcada como ${newStatus}`);
     } catch (error) {
-      // MEJORADO: Manejo de errores específico
-      if (error.response?.status === 403) {
-        Alert.alert(
-          "Error",
-          "No tienes permisos para cambiar el estado de esta tarea"
-        );
-      } else {
-        Alert.alert("Error", error.message || "Error al actualizar la tarea");
-      }
-      console.error("Error updating task status:", error);
+      setError(error.message || "Error al actualizar el estado");
     }
   };
 
@@ -198,13 +153,13 @@ const TaskDetail = () => {
   const getStatusColor = (estado) => {
     switch (estado) {
       case "completada":
-        return "#4CAF50";
+        return "#27AE60";
       case "en progreso":
-        return "#FF9800";
+        return "#0984E3";
       case "pendiente":
-        return "#F44336";
+        return "#E74C3C";
       default:
-        return "#9E9E9E";
+        return "#636E72";
     }
   };
 
@@ -212,28 +167,6 @@ const TaskDetail = () => {
     if (!task) return [];
     const allStatuses = ["pendiente", "en progreso", "completada"];
     return allStatuses.filter((status) => status !== task.estado);
-  };
-
-  // NUEVO: Información de debug para verificar permisos
-  const debugPermissions = () => {
-    if (!task || !user) return null;
-
-    return (
-      <View style={styles.debugInfo}>
-        <Text style={styles.debugText}>Debug Info:</Text>
-        <Text style={styles.debugText}>User ID: {user.id_usuario}</Text>
-        <Text style={styles.debugText}>User Role: {user.rol_global}</Text>
-        <Text style={styles.debugText}>Task Creator: {task.id_creador}</Text>
-        <Text style={styles.debugText}>Task Assigned: {task.id_asignado}</Text>
-        <Text style={styles.debugText}>Project Role: {task.rol_proyecto}</Text>
-        <Text style={styles.debugText}>
-          Can Edit: {canEditTask() ? "YES" : "NO"}
-        </Text>
-        <Text style={styles.debugText}>
-          Can Change Status: {canChangeStatus() ? "YES" : "NO"}
-        </Text>
-      </View>
-    );
   };
 
   if (loading) {
@@ -267,6 +200,10 @@ const TaskDetail = () => {
     );
   }
 
+  const isOverdue = task.fecha_vencimiento && 
+                   new Date(task.fecha_vencimiento) < new Date() && 
+                   task.estado !== "completada";
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -274,13 +211,11 @@ const TaskDetail = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#007AFF"]}
+            colors={["#0984E3"]}
           />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {/* Debug info - puedes remover esto en producción */}
-        {debugPermissions()}
-
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -309,7 +244,9 @@ const TaskDetail = () => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Descripción</Text>
-          <Text style={styles.description}>{task.descripcion}</Text>
+          <Text style={styles.description}>
+            {task.descripcion || "No hay descripción disponible"}
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -339,12 +276,11 @@ const TaskDetail = () => {
                 <Text
                   style={[
                     styles.infoValue,
-                    new Date(task.fecha_vencimiento) < new Date() &&
-                      task.estado !== "completada" &&
-                      styles.overdue,
+                    isOverdue && styles.overdue,
                   ]}
                 >
                   {new Date(task.fecha_vencimiento).toLocaleDateString()}
+                  {isOverdue && " (Vencida)"}
                 </Text>
               </View>
             )}
@@ -436,6 +372,7 @@ const TaskDetail = () => {
               value={deleteConfirmText}
               onChangeText={setDeleteConfirmText}
               placeholder="ELIMINAR"
+              placeholderTextColor="#8E8E93"
               autoCapitalize="characters"
             />
 
@@ -474,204 +411,113 @@ const TaskDetail = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F8F9FA",
   },
-  // Estilos para debug
-  debugInfo: {
-    backgroundColor: "#fff3cd",
-    padding: 12,
-    borderRadius: 8,
-    margin: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "#ffc107",
-  },
-  debugText: {
-    fontSize: 12,
-    color: "#856404",
-    marginBottom: 2,
-  },
-  // ... (el resto de los estilos permanecen igual)
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: isSmallDevice ? 16 : 20,
   },
   errorTitle: {
-    fontSize: 24,
+    fontSize: isSmallDevice ? 20 : 24,
     fontWeight: "bold",
-    color: "#FF6B6B",
-    marginBottom: 16,
+    color: "#E74C3C",
+    marginBottom: isSmallDevice ? 12 : 16,
+    textAlign: "center",
   },
   errorMessage: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#636E72",
     textAlign: "center",
-    marginBottom: 24,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 24,
-    width: "100%",
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FF6B6B",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  modalText: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  warningText: {
-    fontSize: 14,
-    color: "#FF6B6B",
-    fontWeight: "600",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  confirmText: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  errorText: {
-    color: "#FF6B6B",
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#f8f9fa",
-    borderWidth: 1,
-    borderColor: "#6c757d",
-  },
-  confirmButton: {
-    backgroundColor: "#FF6B6B",
-  },
-  disabledButton: {
-    backgroundColor: "#cccccc",
-    opacity: 0.6,
-  },
-  cancelButtonText: {
-    color: "#6c757d",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  confirmButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+    marginBottom: isSmallDevice ? 20 : 24,
+    lineHeight: 22,
   },
   backButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    backgroundColor: "#0984E3",
+    paddingHorizontal: isSmallDevice ? 18 : 20,
+    paddingVertical: isSmallDevice ? 10 : 12,
     borderRadius: 8,
+    shadowColor: "#0984E3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   backButtonText: {
-    color: "white",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "600",
   },
   header: {
-    backgroundColor: "white",
-    padding: 20,
+    backgroundColor: "#FFFFFF",
+    padding: isSmallDevice ? 16 : 20,
     marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#DFE6E9",
   },
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
+    marginBottom: isSmallDevice ? 10 : 12,
   },
   title: {
-    fontSize: 24,
+    fontSize: isSmallDevice ? 20 : 24,
     fontWeight: "bold",
-    color: "#333",
+    color: "#2D3436",
     flex: 1,
     marginRight: 12,
-    lineHeight: 28,
+    lineHeight: isSmallDevice ? 24 : 28,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: isSmallDevice ? 10 : 12,
+    paddingVertical: isSmallDevice ? 5 : 6,
     borderRadius: 16,
   },
   statusText: {
-    color: "white",
-    fontSize: 14,
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 12 : 14,
     fontWeight: "bold",
+    textTransform: "capitalize",
   },
   projectName: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#636E72",
     fontStyle: "italic",
     marginBottom: 8,
   },
   backToProjectButton: {
-    backgroundColor: "#f8f9fa",
-    padding: 12,
+    backgroundColor: "#F8F9FA",
+    padding: isSmallDevice ? 10 : 12,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#007AFF",
+    borderWidth: 2,
+    borderColor: "#0984E3",
     alignItems: "center",
     marginTop: 8,
   },
   backToProjectText: {
-    color: "#007AFF",
-    fontSize: 14,
+    color: "#0984E3",
+    fontSize: isSmallDevice ? 13 : 14,
     fontWeight: "600",
   },
   section: {
-    backgroundColor: "white",
-    padding: 20,
+    backgroundColor: "#FFFFFF",
+    padding: isSmallDevice ? 16 : 20,
     marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#DFE6E9",
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: isSmallDevice ? 16 : 18,
     fontWeight: "bold",
-    color: "#333",
-    marginBottom: 12,
+    color: "#2D3436",
+    marginBottom: isSmallDevice ? 10 : 12,
   },
   description: {
-    fontSize: 16,
-    color: "#666",
-    lineHeight: 22,
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#636E72",
+    lineHeight: isSmallDevice ? 20 : 22,
   },
   infoGrid: {
     flexDirection: "row",
@@ -681,55 +527,55 @@ const styles = StyleSheet.create({
   infoItem: {
     width: "50%",
     paddingHorizontal: 8,
-    marginBottom: 16,
+    marginBottom: isSmallDevice ? 12 : 16,
   },
   infoLabel: {
-    fontSize: 14,
-    color: "#999",
+    fontSize: isSmallDevice ? 13 : 14,
+    color: "#636E72",
     marginBottom: 4,
   },
   infoValue: {
-    fontSize: 16,
-    color: "#333",
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#2D3436",
     fontWeight: "600",
   },
   overdue: {
-    color: "#FF6B6B",
+    color: "#E74C3C",
     fontWeight: "bold",
   },
   fileContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    padding: 16,
+    backgroundColor: "#F8F9FA",
+    padding: isSmallDevice ? 14 : 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#e9ecef",
+    borderColor: "#DFE6E9",
   },
   fileText: {
-    fontSize: 16,
-    color: "#333",
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#2D3436",
     flex: 1,
   },
   fileAction: {
-    fontSize: 14,
-    color: "#007AFF",
+    fontSize: isSmallDevice ? 13 : 14,
+    color: "#0984E3",
     fontWeight: "600",
   },
   actionsSection: {
-    backgroundColor: "white",
-    padding: 20,
+    backgroundColor: "#FFFFFF",
+    padding: isSmallDevice ? 16 : 20,
     marginBottom: 16,
   },
   actionGroup: {
-    marginBottom: 24,
+    marginBottom: isSmallDevice ? 20 : 24,
   },
   actionGroupTitle: {
-    fontSize: 16,
+    fontSize: isSmallDevice ? 15 : 16,
     fontWeight: "bold",
-    color: "#333",
-    marginBottom: 12,
+    color: "#2D3436",
+    marginBottom: isSmallDevice ? 10 : 12,
   },
   statusButtons: {
     flexDirection: "row",
@@ -741,36 +587,149 @@ const styles = StyleSheet.create({
     minWidth: "48%",
     marginHorizontal: 4,
     marginBottom: 8,
-    padding: 12,
+    padding: isSmallDevice ? 10 : 12,
     borderRadius: 8,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   statusButtonText: {
-    color: "white",
-    fontSize: 14,
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 13 : 14,
     fontWeight: "600",
     textAlign: "center",
   },
   editButtons: {
     flexDirection: "row",
     marginHorizontal: -6,
+    gap: 12,
   },
   editButton: {
     flex: 1,
-    marginHorizontal: 6,
-    padding: 12,
+    padding: isSmallDevice ? 12 : 14,
     borderRadius: 8,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   primaryButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#0984E3",
   },
   dangerButton: {
-    backgroundColor: "#FF6B6B",
+    backgroundColor: "#E74C3C",
   },
   editButtonText: {
-    color: "white",
-    fontSize: 14,
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 13 : 14,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: isSmallDevice ? 20 : 24,
+    width: "100%",
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: "#DFE6E9",
+  },
+  modalTitle: {
+    fontSize: isSmallDevice ? 18 : 20,
+    fontWeight: "bold",
+    color: "#E74C3C",
+    marginBottom: isSmallDevice ? 10 : 12,
+    textAlign: "center",
+  },
+  modalText: {
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#2D3436",
+    marginBottom: 8,
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  warningText: {
+    fontSize: isSmallDevice ? 13 : 14,
+    color: "#E74C3C",
+    fontWeight: "600",
+    marginBottom: isSmallDevice ? 14 : 16,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  confirmText: {
+    fontSize: isSmallDevice ? 13 : 14,
+    color: "#636E72",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  textInput: {
+    borderWidth: 2,
+    borderColor: "#DFE6E9",
+    borderRadius: 8,
+    padding: isSmallDevice ? 12 : 14,
+    fontSize: isSmallDevice ? 14 : 16,
+    textAlign: "center",
+    marginBottom: isSmallDevice ? 14 : 16,
+    backgroundColor: "#FFFFFF",
+    color: "#2D3436",
+  },
+  errorText: {
+    color: "#E74C3C",
+    fontSize: isSmallDevice ? 13 : 14,
+    textAlign: "center",
+    marginBottom: isSmallDevice ? 14 : 16,
+    fontWeight: "500",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    padding: isSmallDevice ? 12 : 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+  },
+  cancelButton: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#DFE6E9",
+  },
+  confirmButton: {
+    backgroundColor: "#E74C3C",
+    shadowColor: "#E74C3C",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  disabledButton: {
+    backgroundColor: "#B2BEC3",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  cancelButtonText: {
+    color: "#636E72",
+    fontSize: isSmallDevice ? 14 : 16,
+    fontWeight: "600",
+  },
+  confirmButtonText: {
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "600",
   },
 });

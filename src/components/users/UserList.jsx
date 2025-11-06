@@ -5,13 +5,15 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
-  Alert,
-  Platform
+  Dimensions,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import usersService from '../../services/users';
 import Loading from '../common/Loading';
 import ErrorMessage from '../common/ErrorMessage';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
 
 const UserList = () => {
   const { user } = useAuth();
@@ -52,18 +54,24 @@ const UserList = () => {
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'admin': return '#FF6B6B';
-      case 'usuario': return '#45B7D1';
-      default: return '#95A5A6';
+      case 'admin': return '#E74C3C';
+      case 'usuario': return '#0984E3';
+      default: return '#636E72';
     }
+  };
+
+  const getAvatarColor = (name) => {
+    const colors = ['#0984E3', '#27AE60', '#E74C3C', '#F39C12', '#9B59B6', '#1ABC9C'];
+    const index = name.length % colors.length;
+    return colors[index];
   };
 
   const renderUserItem = ({ item }) => (
     <View style={styles.userCard}>
       <View style={styles.userHeader}>
-        <View style={styles.avatar}>
+        <View style={[styles.avatar, { backgroundColor: getAvatarColor(item.nombre) }]}>
           <Text style={styles.avatarText}>
-            {item.nombre.split(' ').map(n => n[0]).join('').toUpperCase()}
+            {item.nombre.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
           </Text>
         </View>
         
@@ -117,7 +125,7 @@ const UserList = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Usuarios del Sistema</Text>
         <Text style={styles.subtitle}>
-          {users.length} usuarios registrados
+          {users.length} usuario{users.length !== 1 ? 's' : ''} registrado{users.length !== 1 ? 's' : ''}
         </Text>
       </View>
 
@@ -130,10 +138,18 @@ const UserList = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#007AFF']}
+            colors={['#0984E3']}
           />
         }
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>No hay usuarios registrados</Text>
+            <Text style={styles.emptySubtitle}>
+              Los usuarios aparecerán aquí cuando se registren en el sistema
+            </Text>
+          </View>
+        }
       />
     </View>
   );
@@ -142,70 +158,78 @@ const UserList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 16,
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: isSmallDevice ? 14 : 16,
+    paddingVertical: 16,
   },
   accessDenied: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: isSmallDevice ? 16 : 20,
   },
   accessDeniedTitle: {
-    fontSize: 24,
+    fontSize: isSmallDevice ? 20 : 24,
     fontWeight: 'bold',
-    color: '#FF6B6B',
-    marginBottom: 12,
+    color: '#E74C3C',
+    marginBottom: isSmallDevice ? 10 : 12,
+    textAlign: 'center',
   },
   accessDeniedText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: isSmallDevice ? 14 : 16,
+    color: '#636E72',
     textAlign: 'center',
     lineHeight: 22,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: isSmallDevice ? 16 : 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: isSmallDevice ? 20 : 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2D3436',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: isSmallDevice ? 14 : 16,
+    color: '#636E72',
   },
   listContent: {
     paddingBottom: 20,
   },
   userCard: {
-    backgroundColor: 'white',
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    padding: isSmallDevice ? 14 : 16,
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#DFE6E9',
   },
   userHeader: {
     flexDirection: 'row',
     marginBottom: 12,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#007AFF',
+    width: isSmallDevice ? 44 : 50,
+    height: isSmallDevice ? 44 : 50,
+    borderRadius: isSmallDevice ? 22 : 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: isSmallDevice ? 10 : 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   avatarText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: 'bold',
   },
   userInfo: {
@@ -213,19 +237,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   userName: {
-    fontSize: 18,
+    fontSize: isSmallDevice ? 16 : 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2D3436',
     marginBottom: 4,
   },
   userEmail: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: isSmallDevice ? 13 : 14,
+    color: '#636E72',
     marginBottom: 4,
   },
   userDate: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: isSmallDevice ? 11 : 12,
+    color: '#636E72',
   },
   userFooter: {
     flexDirection: 'row',
@@ -233,23 +257,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: '#DFE6E9',
   },
   roleBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: isSmallDevice ? 6 : 8,
+    paddingVertical: isSmallDevice ? 3 : 4,
     borderRadius: 12,
   },
   roleText: {
-    color: 'white',
-    fontSize: 12,
+    color: '#FFFFFF',
+    fontSize: isSmallDevice ? 10 : 12,
     fontWeight: 'bold',
     textTransform: 'capitalize',
   },
   userId: {
-    fontSize: 12,
-    color: '#999',
-    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+    fontSize: isSmallDevice ? 10 : 12,
+    color: '#636E72',
+    fontFamily: 'monospace',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: isSmallDevice ? 16 : 18,
+    color: '#2D3436',
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: isSmallDevice ? 14 : 16,
+    color: '#636E72',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 

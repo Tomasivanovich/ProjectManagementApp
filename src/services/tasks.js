@@ -17,12 +17,10 @@ class TasksService {
     return await api.put(`/tasks/${taskId}`, taskData);
   }
 
-  // CORREGIDO: Cambiar el nombre del método para que coincida con el endpoint
   async updateTaskStatus(taskId, statusData) {
     return await api.patch(`/tasks/${taskId}/completar`, statusData);
   }
-
-  // O si el endpoint espera PUT en lugar de PATCH:
+  
   async updateTaskStatusAlternative(taskId, statusData) {
     return await api.put(`/tasks/${taskId}/status`, statusData);
   }

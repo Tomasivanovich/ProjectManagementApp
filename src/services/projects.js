@@ -29,10 +29,8 @@ class ProjectsService {
       });
       return response;
     } catch (error) {
-      // Ahora el error tiene status y data
       let errorMessage = "Error al enviar la invitación";
       if (error.data) {
-        // Si hay errores de validación, unirlos
         if (error.data.errors && Array.isArray(error.data.errors)) {
           errorMessage = error.data.errors.map((e) => e.msg).join(", ");
         } else if (error.data.message) {

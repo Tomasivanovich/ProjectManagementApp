@@ -3,14 +3,13 @@ import 'dotenv/config';
 export default {
   expo: {
     name: "P.M.A",
-    slug: "Project Management App",
+    slug: "Project",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
-    // ✅ SCHEME CORRECTO para que Google pueda redirigir a tu app
-    scheme: "com.tomas.project", // O "projectapp" si prefieres
+    scheme: "com.tomas.project", 
     splash: {
       image: "./assets/splash-icon.png",
       resizeMode: "contain",
@@ -27,13 +26,12 @@ export default {
         backgroundColor: "#ffffff"
       },
       edgeToEdgeEnabled: true,
-      // ✅ INTENT FILTER para Android
       intentFilters: [
         {
           action: "VIEW",
           data: [
             {
-              scheme: "com.tomas.project", // DEBE coincidir con el scheme de arriba
+              scheme: "com.tomas.project", 
               host: "auth"
             }
           ],

@@ -23,14 +23,12 @@ const GoogleLoginButton = () => {
 
   const googleConfig = Constants.expoConfig?.extra?.google;
 
-  // ✅ CONFIGURACIÓN ÚNICA PARA AMBAS PLATAFORMAS
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: googleConfig?.webClientId,
     androidClientId: googleConfig?.androidClientId,
     scopes: ["openid", "profile", "email"],
   });
 
-  // ✅ EFECTO ÚNICO PARA PROCESAR RESPUESTA
   useEffect(() => {
     console.log("🔄 [Universal] RESPONSE:", response?.type);
     
@@ -49,53 +47,51 @@ const GoogleLoginButton = () => {
         accessToken = response.authentication?.accessToken;
       }
 
-      console.log("🔑 [Universal] Token:", accessToken ? accessToken.substring(0, 20) + "..." : "NO ENCONTRADO");
+      console.log("[Universal] Token:", accessToken ? accessToken.substring(0, 20) + "..." : "NO ENCONTRADO");
 
       if (accessToken) {
         handleGoogleSignIn(accessToken);
       } else {
-        console.error("❌ [Universal] No se pudo extraer token");
+        console.error("[Universal] No se pudo extraer token");
         Alert.alert("Error", "No se pudo obtener el token de acceso");
         setLoading(false);
         responseProcessed.current = false;
       }
     } else if (response?.type === "error") {
-      console.error("❌ [Universal] Error:", response.error);
+      console.error("[Universal] Error:", response.error);
       Alert.alert("Error", `Error: ${response.error?.message || response.error}`);
       setLoading(false);
       responseProcessed.current = false;
     }
   }, [response]);
 
-  // ✅ FUNCIÓN ÚNICA PARA MANEJAR EL LOGIN
   const handlePress = async () => {
     if (!request) {
       Alert.alert("Error", "Google OAuth no está configurado");
       return;
     }
 
-    console.log("🚀 [Universal] Iniciando login...");
+    console.log("[Universal] Iniciando login...");
     setLoading(true);
     responseProcessed.current = false;
 
     try {
       await promptAsync();
     } catch (error) {
-      console.error("💥 [Universal] Error en promptAsync:", error);
+      console.error("[Universal] Error en promptAsync:", error);
       Alert.alert("Error", "No se pudo conectar con Google");
       setLoading(false);
       responseProcessed.current = false;
     }
   };
 
-  // ✅ FUNCIÓN PARA PROCESAR EL TOKEN
   const handleGoogleSignIn = async (accessToken) => {
     try {
-      console.log("🔐 [Button] Iniciando login con token...");
+      console.log("[Button] Iniciando login con token...");
       await loginWithGoogle(accessToken);
-      console.log("✅ [Button] Login completado exitosamente");
+      console.log("[Button] Login completado exitosamente");
     } catch (error) {
-      console.error("❌ [Button] Error:", error);
+      console.error("[Button] Error:", error);
       Alert.alert("Error", error.message || "Error al iniciar sesión con Google");
     } finally {
       setLoading(false);

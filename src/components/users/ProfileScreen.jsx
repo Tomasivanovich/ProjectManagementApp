@@ -156,18 +156,6 @@ const ProfileScreen = () => {
               </Text>
               <Text style={styles.statLabel}>Creados</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>
-                {userStats?.assignedTasks || 0}
-              </Text>
-              <Text style={styles.statLabel}>Tareas Asignadas</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>
-                {userStats?.completedTasks || 0}
-              </Text>
-              <Text style={styles.statLabel}>Completadas</Text>
-            </View>
           </View>
         </View>
 

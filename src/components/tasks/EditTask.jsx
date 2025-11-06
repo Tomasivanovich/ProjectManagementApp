@@ -4,20 +4,23 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Alert,
   TouchableOpacity,
   TextInput,
   Modal,
   FlatList,
+  Dimensions,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
 import tasksService from "../../services/tasks";
 import projectsService from "../../services/projects";
 import { useAuth } from "../../contexts/AuthContext";
 import Loading from "../common/Loading";
 import ErrorMessage from "../common/ErrorMessage";
+
+const { width } = Dimensions.get("window");
+const isSmallDevice = width < 375;
 
 const EditTask = () => {
   const route = useRoute();
@@ -40,8 +43,9 @@ const EditTask = () => {
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [fechaCreacion, setFechaCreacion] = useState(new Date());
 
-  // Cargar datos iniciales
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -49,11 +53,11 @@ const EditTask = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      
+
       // Cargar el proyecto para obtener los usuarios
-      const projectResponse = await projectsService.getProject(task.id_proyecto);
-      console.log('👥 Proyecto cargado:', projectResponse.data);
-      // Asumimos que la respuesta del proyecto tiene una propiedad `usuarios`
+      const projectResponse = await projectsService.getProject(
+        task.id_proyecto
+      );
       setUsers(projectResponse.data.usuarios || []);
 
       // Establecer datos de la tarea
@@ -70,9 +74,13 @@ const EditTask = () => {
         if (task.fecha_vencimiento) {
           setSelectedDate(new Date(task.fecha_vencimiento));
         }
+
+        // Guardar fecha de creación para validaciones
+        if (task.fecha_creacion) {
+          setFechaCreacion(new Date(task.fecha_creacion));
+        }
       }
     } catch (err) {
-      console.error('❌ Error cargando datos:', err);
       setError("Error al cargar los datos de la tarea");
     } finally {
       setLoading(false);
@@ -81,9 +89,9 @@ const EditTask = () => {
 
   // Manejar cambios en los campos
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -91,29 +99,69 @@ const EditTask = () => {
   const handleDateChange = (event, date) => {
     setShowDatePicker(false);
     if (date) {
+      // Validar que la fecha no sea anterior a la fecha de creación
+      if (date < fechaCreacion) {
+        setError(
+          "La fecha de vencimiento no puede ser anterior a la fecha de creación de la tarea"
+        );
+        return;
+      }
+
       setSelectedDate(date);
-      // Formatear fecha como YYYY-MM-DD para el backend
-      const formattedDate = date.toISOString().split('T')[0];
-      handleInputChange('fecha_vencimiento', formattedDate);
+      const formattedDate = date.toISOString().split("T")[0];
+      handleInputChange("fecha_vencimiento", formattedDate);
     }
   };
 
   // Manejar selección de usuario
   const handleUserSelect = (user) => {
-    handleInputChange('id_asignado', user.id_usuario);
+    handleInputChange("id_asignado", user.id_usuario);
     setShowUsersModal(false);
+  };
+
+  // Validar que un string no contenga solo números
+  const containsOnlyNumbers = (str) => {
+    return /^\d+$/.test(str.trim());
   };
 
   // Validar formulario
   const validateForm = () => {
+    // Validar título
     if (!formData.titulo.trim()) {
       setError("El título es requerido");
       return false;
     }
+
     if (formData.titulo.trim().length < 3) {
       setError("El título debe tener al menos 3 caracteres");
       return false;
     }
+
+    if (containsOnlyNumbers(formData.titulo)) {
+      setError("El título no puede contener solo números");
+      return false;
+    }
+
+    // Validar descripción (si no está vacía)
+    if (
+      formData.descripcion.trim() &&
+      containsOnlyNumbers(formData.descripcion)
+    ) {
+      setError("La descripción no puede contener solo números");
+      return false;
+    }
+
+    // Validar fecha de vencimiento
+    if (formData.fecha_vencimiento) {
+      const fechaVencimiento = new Date(formData.fecha_vencimiento);
+      if (fechaVencimiento < fechaCreacion) {
+        setError(
+          "La fecha de vencimiento no puede ser anterior a la fecha de creación de la tarea"
+        );
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -121,7 +169,7 @@ const EditTask = () => {
   const handleSave = async () => {
     try {
       setError(null);
-      
+
       if (!validateForm()) {
         return;
       }
@@ -136,32 +184,30 @@ const EditTask = () => {
         fecha_vencimiento: formData.fecha_vencimiento,
       };
 
-      console.log('💾 Enviando datos de actualización:', updateData);
-
       await tasksService.updateTask(task.id_tarea, updateData);
-      
-      Alert.alert(
-        "✅ Éxito", 
-        "Tarea actualizada correctamente",
-        [
-          { 
-            text: "OK", 
-            onPress: () => navigation.goBack() 
-          }
-        ]
-      );
+      setSuccessModalVisible(true);
     } catch (err) {
-      console.error('❌ Error actualizando tarea:', err);
-      setError(err.response?.data?.message || err.message || "Error al actualizar la tarea");
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Error al actualizar la tarea"
+      );
     } finally {
       setSaving(false);
     }
   };
 
+  const handleSuccessConfirm = () => {
+    setSuccessModalVisible(false);
+    navigation.goBack();
+  };
+
   // Obtener nombre del usuario asignado
   const getAssignedUserName = () => {
     if (!formData.id_asignado) return "Sin asignar";
-    const assignedUser = users.find(u => u.id_usuario === formData.id_asignado);
+    const assignedUser = users.find(
+      (u) => u.id_usuario === formData.id_asignado
+    );
     return assignedUser ? assignedUser.nombre : "Usuario no encontrado";
   };
 
@@ -169,22 +215,27 @@ const EditTask = () => {
   const formatDisplayDate = (dateString) => {
     if (!dateString) return "Sin fecha";
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   // Limpiar asignación
   const handleClearAssignment = () => {
-    handleInputChange('id_asignado', null);
+    handleInputChange("id_asignado", null);
   };
 
   // Limpiar fecha
   const handleClearDate = () => {
-    handleInputChange('fecha_vencimiento', null);
+    handleInputChange("fecha_vencimiento", null);
     setSelectedDate(new Date());
+  };
+
+  // Obtener fecha mínima para el date picker (fecha de creación)
+  const getMinimumDate = () => {
+    return fechaCreacion;
   };
 
   if (loading) {
@@ -193,7 +244,10 @@ const EditTask = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Editar Tarea</Text>
@@ -202,11 +256,12 @@ const EditTask = () => {
 
         {/* Mensaje de error */}
         {error && (
-          <ErrorMessage 
-            message={error} 
-            onRetry={() => setError(null)}
-            showRetry={false}
-          />
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity onPress={() => setError(null)}>
+              <Text style={styles.errorClose}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Formulario */}
@@ -217,9 +272,10 @@ const EditTask = () => {
             <TextInput
               style={styles.input}
               value={formData.titulo}
-              onChangeText={(text) => handleInputChange('titulo', text)}
+              onChangeText={(text) => handleInputChange("titulo", text)}
               placeholder="Ingresa el título de la tarea"
-              placeholderTextColor="#999"
+              placeholderTextColor="#8E8E93"
+              editable={!saving}
             />
           </View>
 
@@ -229,12 +285,13 @@ const EditTask = () => {
             <TextInput
               style={[styles.input, styles.textArea]}
               value={formData.descripcion}
-              onChangeText={(text) => handleInputChange('descripcion', text)}
+              onChangeText={(text) => handleInputChange("descripcion", text)}
               placeholder="Describe la tarea en detalle..."
-              placeholderTextColor="#999"
+              placeholderTextColor="#8E8E93"
               multiline
               numberOfLines={4}
               textAlignVertical="top"
+              editable={!saving}
             />
           </View>
 
@@ -243,24 +300,38 @@ const EditTask = () => {
             <Text style={styles.label}>Estado</Text>
             <View style={styles.statusContainer}>
               {[
-                { value: "pendiente", label: "Pendiente", color: "#F44336" },
-                { value: "en progreso", label: "En Progreso", color: "#FF9800" },
-                { value: "completada", label: "Completada", color: "#4CAF50" },
+                { value: "pendiente", label: "Pendiente", color: "#E74C3C" },
+                {
+                  value: "en progreso",
+                  label: "En Progreso",
+                  color: "#0984E3",
+                },
+                { value: "completada", label: "Completada", color: "#27AE60" },
               ].map((status) => (
                 <TouchableOpacity
                   key={status.value}
                   style={[
                     styles.statusOption,
-                    formData.estado === status.value && styles.statusOptionSelected,
-                    { borderColor: status.color }
+                    formData.estado === status.value &&
+                      styles.statusOptionSelected,
+                    { borderColor: status.color },
                   ]}
-                  onPress={() => handleInputChange('estado', status.value)}
+                  onPress={() => handleInputChange("estado", status.value)}
+                  disabled={saving}
                 >
-                  <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-                  <Text style={[
-                    styles.statusText,
-                    formData.estado === status.value && styles.statusTextSelected
-                  ]}>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      { backgroundColor: status.color },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.statusText,
+                      formData.estado === status.value &&
+                        styles.statusTextSelected,
+                    ]}
+                  >
                     {status.label}
                   </Text>
                 </TouchableOpacity>
@@ -273,7 +344,10 @@ const EditTask = () => {
             <View style={styles.selectorHeader}>
               <Text style={styles.label}>Asignado a</Text>
               {formData.id_asignado && (
-                <TouchableOpacity onPress={handleClearAssignment}>
+                <TouchableOpacity
+                  onPress={handleClearAssignment}
+                  disabled={saving}
+                >
                   <Text style={styles.clearText}>Limpiar</Text>
                 </TouchableOpacity>
               )}
@@ -281,11 +355,10 @@ const EditTask = () => {
             <TouchableOpacity
               style={styles.selectorButton}
               onPress={() => setShowUsersModal(true)}
+              disabled={saving}
             >
-              <Text style={styles.selectorText}>
-                {getAssignedUserName()}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#666" />
+              <Text style={styles.selectorText}>{getAssignedUserName()}</Text>
+              <Ionicons name="chevron-down" size={20} color="#636E72" />
             </TouchableOpacity>
           </View>
 
@@ -294,7 +367,7 @@ const EditTask = () => {
             <View style={styles.selectorHeader}>
               <Text style={styles.label}>Fecha de Vencimiento</Text>
               {formData.fecha_vencimiento && (
-                <TouchableOpacity onPress={handleClearDate}>
+                <TouchableOpacity onPress={handleClearDate} disabled={saving}>
                   <Text style={styles.clearText}>Limpiar</Text>
                 </TouchableOpacity>
               )}
@@ -302,12 +375,17 @@ const EditTask = () => {
             <TouchableOpacity
               style={styles.selectorButton}
               onPress={() => setShowDatePicker(true)}
+              disabled={saving}
             >
               <Text style={styles.selectorText}>
                 {formatDisplayDate(formData.fecha_vencimiento)}
               </Text>
-              <Ionicons name="calendar" size={20} color="#666" />
+              <Ionicons name="calendar" size={20} color="#636E72" />
             </TouchableOpacity>
+            <Text style={styles.dateHelperText}>
+              La fecha no puede ser anterior al{" "}
+              {fechaCreacion.toLocaleDateString("es-ES")}
+            </Text>
           </View>
 
           {/* Información de solo lectura */}
@@ -324,7 +402,7 @@ const EditTask = () => {
             <View style={styles.readOnlyItem}>
               <Text style={styles.readOnlyLabel}>Fecha de creación:</Text>
               <Text style={styles.readOnlyValue}>
-                {new Date(task.fecha_creacion).toLocaleDateString('es-ES')}
+                {fechaCreacion.toLocaleDateString("es-ES")}
               </Text>
             </View>
           </View>
@@ -342,9 +420,13 @@ const EditTask = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, styles.saveButton, saving && styles.saveButtonDisabled]}
+          style={[
+            styles.button,
+            styles.saveButton,
+            (saving || !formData.titulo.trim()) && styles.saveButtonDisabled,
+          ]}
           onPress={handleSave}
-          disabled={saving}
+          disabled={saving || !formData.titulo.trim()}
         >
           {saving ? (
             <Loading size="small" color="#fff" />
@@ -355,45 +437,69 @@ const EditTask = () => {
       </View>
 
       {/* Modal de selección de usuarios */}
+      <Modal visible={showUsersModal} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Usuario</Text>
+              <TouchableOpacity
+                onPress={() => setShowUsersModal(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#2D3436" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={users}
+              keyExtractor={(item) => item.id_usuario.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.userItem,
+                    formData.id_asignado === item.id_usuario &&
+                      styles.userItemSelected,
+                  ]}
+                  onPress={() => handleUserSelect(item)}
+                >
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{item.nombre}</Text>
+                    <Text style={styles.userEmail}>{item.email}</Text>
+                  </View>
+                  {formData.id_asignado === item.id_usuario && (
+                    <Ionicons name="checkmark" size={20} color="#0984E3" />
+                  )}
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>
+                  No hay usuarios disponibles
+                </Text>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de éxito */}
       <Modal
-        visible={showUsersModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        visible={successModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleSuccessConfirm}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Seleccionar Usuario</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.successModalContent}>
+            <Text style={styles.successModalTitle}>¡Éxito!</Text>
+            <Text style={styles.successModalMessage}>
+              Tarea actualizada correctamente
+            </Text>
             <TouchableOpacity
-              onPress={() => setShowUsersModal(false)}
-              style={styles.closeButton}
+              style={styles.successModalButton}
+              onPress={handleSuccessConfirm}
             >
-              <Ionicons name="close" size={24} color="#333" />
+              <Text style={styles.modalButtonText}>Continuar</Text>
             </TouchableOpacity>
           </View>
-          <FlatList
-            data={users}
-            keyExtractor={(item) => item.id_usuario.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.userItem,
-                  formData.id_asignado === item.id_usuario && styles.userItemSelected
-                ]}
-                onPress={() => handleUserSelect(item)}
-              >
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{item.nombre}</Text>
-                  <Text style={styles.userEmail}>{item.email}</Text>
-                </View>
-                {formData.id_asignado === item.id_usuario && (
-                  <Ionicons name="checkmark" size={20} color="#007AFF" />
-                )}
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No hay usuarios disponibles</Text>
-            }
-          />
         </View>
       </Modal>
 
@@ -404,7 +510,7 @@ const EditTask = () => {
           mode="date"
           display="default"
           onChange={handleDateChange}
-          minimumDate={new Date()}
+          minimumDate={getMinimumDate()}
         />
       )}
     </View>
@@ -414,50 +520,76 @@ const EditTask = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F8F9FA",
   },
   scrollView: {
     flex: 1,
   },
   header: {
-    backgroundColor: "white",
-    padding: 20,
+    backgroundColor: "#FFFFFF",
+    padding: isSmallDevice ? 16 : 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: "#DFE6E9",
   },
   title: {
-    fontSize: 24,
+    fontSize: isSmallDevice ? 20 : 24,
     fontWeight: "bold",
-    color: "#333",
+    color: "#2D3436",
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#636E72",
     fontStyle: "italic",
   },
+  errorContainer: {
+    backgroundColor: "#FDEDED",
+    margin: isSmallDevice ? 14 : 16,
+    padding: isSmallDevice ? 12 : 16,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: "#E74C3C",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#E74C3C",
+    fontSize: isSmallDevice ? 13 : 14,
+    fontWeight: "500",
+    flex: 1,
+  },
+  errorClose: {
+    color: "#E74C3C",
+    fontSize: isSmallDevice ? 13 : 14,
+    fontWeight: "600",
+    marginLeft: 12,
+  },
   form: {
-    backgroundColor: "white",
+    backgroundColor: "#FFFFFF",
     marginTop: 16,
-    padding: 20,
+    padding: isSmallDevice ? 16 : 20,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#DFE6E9",
   },
   inputGroup: {
     marginBottom: 24,
   },
   label: {
-    fontSize: 16,
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "600",
-    color: "#333",
+    color: "#2D3436",
     marginBottom: 8,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
+    borderWidth: 2,
+    borderColor: "#DFE6E9",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#fafafa",
-    color: "#333",
+    padding: isSmallDevice ? 12 : 14,
+    fontSize: isSmallDevice ? 14 : 16,
+    backgroundColor: "#FFFFFF",
+    color: "#2D3436",
   },
   textArea: {
     height: 100,
@@ -466,19 +598,19 @@ const styles = StyleSheet.create({
   statusContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: 8,
   },
   statusOption: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
+    padding: isSmallDevice ? 10 : 12,
     borderWidth: 2,
     borderRadius: 8,
-    marginHorizontal: 4,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#F8F9FA",
   },
   statusOptionSelected: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
   },
   statusDot: {
     width: 12,
@@ -487,12 +619,12 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   statusText: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: isSmallDevice ? 12 : 14,
+    color: "#636E72",
     fontWeight: "500",
   },
   statusTextSelected: {
-    color: "#333",
+    color: "#2D3436",
     fontWeight: "600",
   },
   selectorHeader: {
@@ -502,35 +634,41 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   clearText: {
-    fontSize: 14,
-    color: "#007AFF",
+    fontSize: isSmallDevice ? 13 : 14,
+    color: "#0984E3",
     fontWeight: "500",
   },
   selectorButton: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    borderWidth: 2,
+    borderColor: "#DFE6E9",
     borderRadius: 8,
-    padding: 12,
-    backgroundColor: "#fafafa",
+    padding: isSmallDevice ? 12 : 14,
+    backgroundColor: "#FFFFFF",
   },
   selectorText: {
-    fontSize: 16,
-    color: "#333",
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#2D3436",
+  },
+  dateHelperText: {
+    fontSize: isSmallDevice ? 12 : 13,
+    color: "#636E72",
+    marginTop: 6,
+    fontStyle: "italic",
   },
   readOnlyInfo: {
-    backgroundColor: "#f8f9fa",
-    padding: 16,
+    backgroundColor: "#F8F9FA",
+    padding: isSmallDevice ? 14 : 16,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: "#007AFF",
+    borderLeftColor: "#0984E3",
   },
   readOnlyTitle: {
-    fontSize: 16,
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "bold",
-    color: "#333",
+    color: "#2D3436",
     marginBottom: 12,
   },
   readOnlyItem: {
@@ -539,66 +677,87 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   readOnlyLabel: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: isSmallDevice ? 13 : 14,
+    color: "#636E72",
     fontWeight: "500",
   },
   readOnlyValue: {
-    fontSize: 14,
-    color: "#333",
+    fontSize: isSmallDevice ? 13 : 14,
+    color: "#2D3436",
     fontWeight: "600",
   },
   footer: {
     flexDirection: "row",
-    padding: 16,
-    backgroundColor: "white",
+    padding: isSmallDevice ? 14 : 16,
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
+    borderTopColor: "#DFE6E9",
+    gap: 12,
   },
   button: {
     flex: 1,
-    padding: 16,
+    padding: isSmallDevice ? 14 : 16,
     borderRadius: 8,
     alignItems: "center",
-    marginHorizontal: 8,
+    justifyContent: "center",
+    minHeight: 50,
   },
   cancelButton: {
-    backgroundColor: "#f8f9fa",
-    borderWidth: 1,
-    borderColor: "#6c757d",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#DFE6E9",
   },
   cancelButtonText: {
-    color: "#6c757d",
-    fontSize: 16,
+    color: "#636E72",
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "600",
   },
   saveButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#0984E3",
+    shadowColor: "#0984E3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   saveButtonDisabled: {
-    backgroundColor: "#ccc",
+    backgroundColor: "#B2BEC3",
+    shadowOpacity: 0,
+    elevation: 0,
   },
   saveButtonText: {
-    color: "white",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "600",
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    width: "100%",
+    maxWidth: 400,
+    maxHeight: "80%",
+    borderWidth: 1,
+    borderColor: "#DFE6E9",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: isSmallDevice ? 16 : 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: "#DFE6E9",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: isSmallDevice ? 18 : 20,
     fontWeight: "bold",
-    color: "#333",
+    color: "#2D3436",
   },
   closeButton: {
     padding: 4,
@@ -607,32 +766,74 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: isSmallDevice ? 14 : 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#F8F9FA",
   },
   userItemSelected: {
-    backgroundColor: "#f0f8ff",
+    backgroundColor: "#F0F7FF",
   },
   userInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 16,
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "500",
-    color: "#333",
+    color: "#2D3436",
   },
   userEmail: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: isSmallDevice ? 13 : 14,
+    color: "#636E72",
     marginTop: 2,
   },
   emptyText: {
     textAlign: "center",
-    color: "#666",
+    color: "#636E72",
     fontStyle: "italic",
     marginTop: 20,
     padding: 20,
+  },
+  successModalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 24,
+    width: "100%",
+    maxWidth: 320,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#DFE6E9",
+  },
+  successModalTitle: {
+    fontSize: isSmallDevice ? 18 : 20,
+    fontWeight: "bold",
+    color: "#27AE60",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  successModalMessage: {
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#636E72",
+    textAlign: "center",
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  successModalButton: {
+    backgroundColor: "#27AE60",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+    shadowColor: "#27AE60",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  modalButtonText: {
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 14 : 16,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 

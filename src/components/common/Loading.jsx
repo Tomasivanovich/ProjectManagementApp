@@ -4,12 +4,16 @@ import {
   Text,
   ActivityIndicator,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
 
 const Loading = ({ message = 'Cargando...' }) => {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#007AFF" />
+      <ActivityIndicator size="large" color="#0984E3" />
       <Text style={styles.text}>{message}</Text>
     </View>
   );
@@ -20,14 +24,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    padding: 20,
+    backgroundColor: '#F8F9FA',
+    padding: isSmallDevice ? 16 : 20,
   },
   text: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
+    marginTop: isSmallDevice ? 12 : 16,
+    fontSize: isSmallDevice ? 14 : 16,
+    color: '#636E72',
     textAlign: 'center',
+    fontWeight: '500',
   },
 });
 

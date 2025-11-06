@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TextInput,
   Modal,
+  Dimensions,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import projectsService from "../../services/projects";
@@ -14,12 +15,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import Loading from "../common/Loading";
 import ErrorMessage from "../common/ErrorMessage";
 
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
+
 const ProjectMembers = () => {
   const route = useRoute();
   const { user } = useAuth();
   const { projectId } = route.params;
-
-  console.log("ProjectMembers - projectId:", projectId);
 
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,6 @@ const ProjectMembers = () => {
     try {
       setError(null);
       const response = await projectsService.getProject(projectId);
-      console.log("Proyecto cargado:", response.data);
       setProject(response.data);
     } catch (err) {
       setError(err.message);
@@ -52,27 +53,16 @@ const ProjectMembers = () => {
     loadProject();
   }, [projectId]);
 
-  // Función corregida de permisos
   const canManageMembers = () => {
-    if (!project || !user) {
-      console.log("No hay proyecto o usuario");
-      return false;
-    }
+    if (!project || !user) return false;
 
     const userId = user.id_usuario;
     const projectCreatorId = project.id_creador;
 
-    console.log("userId:", userId, "projectCreatorId:", projectCreatorId);
-
-    if (!userId) {
-      console.log("No se pudo encontrar el ID del usuario");
-      return false;
-    }
+    if (!userId) return false;
 
     const isAdmin = user.rol_global === "admin";
     const isProjectCreator = Number(projectCreatorId) === Number(userId);
-
-    console.log("isAdmin:", isAdmin, "isProjectCreator:", isProjectCreator);
 
     return isAdmin || isProjectCreator;
   };
@@ -101,7 +91,6 @@ const ProjectMembers = () => {
       setInviteData({ email: "", rol_proyecto: "colaborador" });
       loadProject();
     } catch (error) {
-      // Aquí error.message ya debe tener el mensaje del backend
       showMessage("Error", error.message);
     }
   };
@@ -117,7 +106,6 @@ const ProjectMembers = () => {
   };
 
   const confirmRemoveMember = (member) => {
-    // También corregir esta comparación
     if (Number(member.id_usuario) === Number(project.id_creador)) {
       showMessage("Error", "No puedes remover al creador del proyecto");
       return;
@@ -144,13 +132,13 @@ const ProjectMembers = () => {
   const getRoleColor = (role) => {
     switch (role) {
       case "creador":
-        return "#FF6B6B";
+        return "#E74C3C";
       case "lider":
-        return "#4ECDC4";
+        return "#0984E3";
       case "colaborador":
-        return "#45B7D1";
+        return "#27AE60";
       default:
-        return "#95A5A6";
+        return "#636E72";
     }
   };
 
@@ -256,6 +244,7 @@ const ProjectMembers = () => {
             <TextInput
               style={styles.modalInput}
               placeholder="Email del usuario"
+              placeholderTextColor="#8E8E93"
               value={inviteData.email}
               onChangeText={(text) =>
                 setInviteData((prev) => ({ ...prev, email: text }))
@@ -370,69 +359,75 @@ const ProjectMembers = () => {
   );
 };
 
-// Los estilos se mantienen igual
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    padding: 16,
+    backgroundColor: "#F8F9FA",
+    padding: isSmallDevice ? 14 : 16,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: isSmallDevice ? 16 : 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: isSmallDevice ? 20 : 24,
     fontWeight: "bold",
-    color: "#333",
+    color: "#2D3436",
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#636E72",
   },
   inviteButton: {
-    backgroundColor: "#007AFF",
-    padding: 16,
+    backgroundColor: "#0984E3",
+    padding: isSmallDevice ? 14 : 16,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: isSmallDevice ? 16 : 20,
+    shadowColor: "#0984E3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   inviteButtonText: {
-    color: "white",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "bold",
   },
   listContent: {
     paddingBottom: 20,
   },
   memberCard: {
-    backgroundColor: "white",
-    padding: 16,
+    backgroundColor: "#FFFFFF",
+    padding: isSmallDevice ? 14 : 16,
     borderRadius: 8,
     marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#DFE6E9",
   },
   memberInfo: {
     marginBottom: 12,
   },
   memberName: {
-    fontSize: 16,
+    fontSize: isSmallDevice ? 15 : 16,
     fontWeight: "bold",
-    color: "#333",
+    color: "#2D3436",
     marginBottom: 4,
   },
   memberEmail: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: isSmallDevice ? 13 : 14,
+    color: "#636E72",
     marginBottom: 4,
   },
   memberDate: {
-    fontSize: 12,
-    color: "#999",
+    fontSize: isSmallDevice ? 11 : 12,
+    color: "#636E72",
   },
   memberActions: {
     flexDirection: "row",
@@ -445,35 +440,39 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   roleText: {
-    color: "white",
-    fontSize: 12,
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 10 : 12,
     fontWeight: "bold",
+    textTransform: "capitalize",
   },
   actionButtons: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
   },
   roleButton: {
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#F8F9FA",
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 6,
-    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: "#DFE6E9",
   },
   roleButtonText: {
-    fontSize: 12,
-    color: "#333",
+    fontSize: isSmallDevice ? 10 : 12,
+    color: "#636E72",
+    fontWeight: "500",
   },
   removeButton: {
-    backgroundColor: "#FF6B6B",
+    backgroundColor: "#E74C3C",
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 6,
-    marginLeft: 8,
   },
   removeButtonText: {
-    fontSize: 12,
-    color: "white",
+    fontSize: isSmallDevice ? 10 : 12,
+    color: "#FFFFFF",
     fontWeight: "bold",
   },
   modalOverlay: {
@@ -484,101 +483,118 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: "white",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 20,
+    padding: isSmallDevice ? 18 : 20,
     width: "100%",
     maxWidth: 400,
+    borderWidth: 1,
+    borderColor: "#DFE6E9",
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: isSmallDevice ? 18 : 20,
     fontWeight: "bold",
-    color: "#333",
+    color: "#2D3436",
     marginBottom: 16,
     textAlign: "center",
   },
   modalMessage: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: isSmallDevice ? 14 : 16,
+    color: "#636E72",
     textAlign: "center",
     marginBottom: 20,
     lineHeight: 22,
   },
   modalInput: {
-    backgroundColor: "#f8f9fa",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#DFE6E9",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    padding: isSmallDevice ? 12 : 14,
+    fontSize: isSmallDevice ? 14 : 16,
     marginBottom: 16,
+    color: "#2D3436",
   },
   modalLabel: {
-    fontSize: 16,
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "600",
-    color: "#333",
+    color: "#2D3436",
     marginBottom: 8,
   },
   roleOptions: {
     flexDirection: "row",
     marginBottom: 20,
+    gap: 8,
   },
   roleOption: {
     flex: 1,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    padding: isSmallDevice ? 10 : 12,
+    borderWidth: 2,
+    borderColor: "#DFE6E9",
     alignItems: "center",
-    marginHorizontal: 4,
     borderRadius: 8,
+    backgroundColor: "#F8F9FA",
   },
   roleOptionSelected: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
+    backgroundColor: "#0984E3",
+    borderColor: "#0984E3",
   },
   roleOptionText: {
-    fontSize: 14,
-    color: "#333",
+    fontSize: isSmallDevice ? 12 : 14,
+    color: "#636E72",
     fontWeight: "600",
+    textTransform: "capitalize",
   },
   roleOptionTextSelected: {
-    color: "white",
+    color: "#FFFFFF",
   },
   modalButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: 12,
   },
   modalButton: {
     flex: 1,
-    padding: 12,
+    padding: isSmallDevice ? 12 : 14,
     borderRadius: 8,
     alignItems: "center",
-    marginHorizontal: 6,
+    justifyContent: "center",
+    minHeight: 44,
   },
   cancelButton: {
-    backgroundColor: "#f8f9fa",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#DFE6E9",
   },
   confirmButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#0984E3",
+    shadowColor: "#0984E3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   removeConfirmButton: {
-    backgroundColor: "#FF6B6B",
+    backgroundColor: "#E74C3C",
+    shadowColor: "#E74C3C",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   cancelButtonText: {
-    color: "#333",
-    fontSize: 16,
+    color: "#636E72",
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "600",
   },
   confirmButtonText: {
-    color: "white",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "600",
   },
   removeConfirmButtonText: {
-    color: "white",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: "600",
   },
 });

@@ -7,7 +7,11 @@ import {
   Alert,
   ActionSheetIOS,
   Platform,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
 
 const TaskCard = ({ 
   task, 
@@ -23,10 +27,10 @@ const TaskCard = ({
 
   const getStatusColor = (estado) => {
     switch (estado) {
-      case 'completada': return '#4CAF50';
-      case 'en progreso': return '#FF9800';
-      case 'pendiente': return '#F44336';
-      default: return '#9E9E9E';
+      case 'completada': return '#27AE60';
+      case 'en progreso': return '#0984E3';
+      case 'pendiente': return '#E74C3C';
+      default: return '#636E72';
     }
   };
 
@@ -103,9 +107,16 @@ const TaskCard = ({
     }
   };
 
+  const isOverdue = task.fecha_vencimiento && 
+                   new Date(task.fecha_vencimiento) < new Date() && 
+                   task.estado !== 'completada';
+
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[
+        styles.card,
+        isOverdue && styles.overdueCard
+      ]}
       onPress={onPress}
       onLongPress={handleLongPress}
       delayLongPress={500}
@@ -131,21 +142,27 @@ const TaskCard = ({
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.description} numberOfLines={3}>
-        {task.descripcion}
-      </Text>
+      {task.descripcion ? (
+        <Text style={styles.description} numberOfLines={3}>
+          {task.descripcion}
+        </Text>
+      ) : (
+        <Text style={styles.noDescription} numberOfLines={1}>
+          Sin descripción
+        </Text>
+      )}
 
       <View style={styles.cardFooter}>
         <View style={styles.footerLeft}>
           <Text style={styles.assignee}>
-            👤 {task.asignado_nombre}
+             {task.asignado_nombre}
           </Text>
           {task.fecha_vencimiento && (
             <Text style={[
               styles.dueDate,
-              new Date(task.fecha_vencimiento) < new Date() && task.estado !== 'completada' && styles.overdue
+              isOverdue && styles.overdue
             ]}>
-              📅 {new Date(task.fecha_vencimiento).toLocaleDateString()}
+               {new Date(task.fecha_vencimiento).toLocaleDateString()}
             </Text>
           )}
         </View>
@@ -165,21 +182,34 @@ const TaskCard = ({
           <Text style={styles.fileText}>📎 Tiene archivo adjunto</Text>
         </View>
       )}
+
+      {isOverdue && (
+        <View style={styles.overdueIndicator}>
+          <Text style={styles.overdueText}> Vencida</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'white',
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    padding: isSmallDevice ? 14 : 16,
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#DFE6E9',
+  },
+  overdueCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#E74C3C',
+    backgroundColor: '#FFF5F5',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -188,9 +218,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 16,
+    fontSize: isSmallDevice ? 15 : 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2D3436',
     flex: 1,
     marginRight: 12,
     lineHeight: 20,
@@ -199,7 +229,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    minWidth: 80,
+    minWidth: isSmallDevice ? 70 : 80,
     alignItems: 'center',
   },
   statusBadgeInteractive: {
@@ -213,14 +243,22 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   statusText: {
-    color: 'white',
-    fontSize: 12,
+    color: '#FFFFFF',
+    fontSize: isSmallDevice ? 10 : 12,
     fontWeight: 'bold',
     textAlign: 'center',
+    textTransform: 'capitalize',
   },
   description: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: isSmallDevice ? 13 : 14,
+    color: '#636E72',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  noDescription: {
+    fontSize: isSmallDevice ? 13 : 14,
+    color: '#B2BEC3',
+    fontStyle: 'italic',
     lineHeight: 18,
     marginBottom: 12,
   },
@@ -236,37 +274,49 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   assignee: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: isSmallDevice ? 11 : 12,
+    color: '#636E72',
     marginBottom: 4,
   },
   dueDate: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: isSmallDevice ? 11 : 12,
+    color: '#636E72',
   },
   overdue: {
-    color: '#FF6B6B',
+    color: '#E74C3C',
     fontWeight: 'bold',
   },
   creator: {
-    fontSize: 11,
-    color: '#999',
+    fontSize: isSmallDevice ? 10 : 11,
+    color: '#636E72',
     marginBottom: 2,
   },
   date: {
-    fontSize: 11,
-    color: '#999',
+    fontSize: isSmallDevice ? 10 : 11,
+    color: '#636E72',
   },
   fileIndicator: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: '#DFE6E9',
   },
   fileText: {
-    fontSize: 12,
-    color: '#007AFF',
+    fontSize: isSmallDevice ? 11 : 12,
+    color: '#0984E3',
     fontStyle: 'italic',
+  },
+  overdueIndicator: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#FFE0E0',
+    alignItems: 'center',
+  },
+  overdueText: {
+    fontSize: isSmallDevice ? 11 : 12,
+    color: '#E74C3C',
+    fontWeight: 'bold',
   },
 });
 

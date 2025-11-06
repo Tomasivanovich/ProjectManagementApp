@@ -39,9 +39,6 @@ const ProjectDetail = () => {
       ]);
 
       setProject(projectResponse.data);
-      // Keep a reference to the currently selected project in context so other
-      // screens (like TaskList) can show project-specific views when opened
-      // via the main tab bar.
       setSelectedProject(projectResponse.data);
       setTasks(tasksResponse.data);
     } catch (err) {
@@ -188,13 +185,13 @@ const ProjectDetail = () => {
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>
-              {project.estadisticas?.tareas_completadas || 0}
+              {project.estadisticas?.tareas_completadas/3 || 0}
             </Text>
             <Text style={styles.statLabel}>Completadas</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>
-              {project.estadisticas?.tareas_en_progreso || 0}
+              {project.estadisticas?.tareas_en_progreso/3 || 0}
             </Text>
             <Text style={styles.statLabel}>En Progreso</Text>
           </View>

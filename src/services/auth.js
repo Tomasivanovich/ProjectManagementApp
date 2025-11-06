@@ -19,7 +19,6 @@ class AuthService {
     }
   }
 
-  // ✅ CORREGIDO: Usa la ruta correcta y envía los datos apropiados
   async loginWithGoogle(accessToken) {
     try {
       const response = await api.post('/auth/google', {
@@ -27,7 +26,7 @@ class AuthService {
       });
       return response;
     } catch (error) {
-      console.error("❌ [AuthService] Error en loginWithGoogle:", error);
+      console.error("[AuthService] Error en loginWithGoogle:", error);
       throw error;
     }
   }

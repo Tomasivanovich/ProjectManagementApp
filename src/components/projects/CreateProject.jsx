@@ -9,9 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import projectsService from '../../services/projects';
+
+const { width } = Dimensions.get('window');
+const isSmallDevice = width < 375;
 
 const CreateProject = () => {
   const navigation = useNavigation();
@@ -73,8 +78,13 @@ const CreateProject = () => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Crear Nuevo Proyecto</Text>
           <Text style={styles.subtitle}>
@@ -88,9 +98,11 @@ const CreateProject = () => {
             <TextInput
               style={styles.input}
               placeholder="Ej: Desarrollo App Móvil"
+              placeholderTextColor="#8E8E93"
               value={formData.nombre}
               onChangeText={(value) => handleChange('nombre', value)}
               maxLength={100}
+              editable={!loading}
             />
           </View>
 
@@ -99,12 +111,14 @@ const CreateProject = () => {
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Describe los objetivos y características del proyecto..."
+              placeholderTextColor="#8E8E93"
               value={formData.descripcion}
               onChangeText={(value) => handleChange('descripcion', value)}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
               maxLength={500}
+              editable={!loading}
             />
             <Text style={styles.charCount}>
               {formData.descripcion.length}/500 caracteres
@@ -121,13 +135,19 @@ const CreateProject = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.button, styles.submitButton, loading && styles.buttonDisabled]}
+              style={[
+                styles.button, 
+                styles.submitButton, 
+                (loading || !formData.nombre.trim() || !formData.descripcion.trim()) && styles.buttonDisabled
+              ]}
               onPress={handleSubmit}
-              disabled={loading}
+              disabled={loading || !formData.nombre.trim() || !formData.descripcion.trim()}
             >
-              <Text style={styles.submitButtonText}>
-                {loading ? 'Creando...' : 'Crear Proyecto'}
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.submitButtonText}>Crear Proyecto</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -181,61 +201,64 @@ const CreateProject = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8F9FA',
   },
   scrollContainer: {
     flexGrow: 1,
-    padding: 20,
+    paddingHorizontal: isSmallDevice ? 16 : 20,
+    paddingVertical: 20,
   },
   header: {
-    marginBottom: 30,
+    marginBottom: isSmallDevice ? 24 : 30,
   },
   title: {
-    fontSize: 28,
+    fontSize: isSmallDevice ? 24 : 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2D3436',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: isSmallDevice ? 14 : 16,
+    color: '#636E72',
     lineHeight: 22,
   },
   form: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 20,
+    padding: isSmallDevice ? 16 : 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#DFE6E9',
   },
   inputGroup: {
     marginBottom: 24,
   },
   label: {
-    fontSize: 16,
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#2D3436',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#DFE6E9',
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#333',
+    padding: isSmallDevice ? 12 : 14,
+    fontSize: isSmallDevice ? 14 : 16,
+    color: '#2D3436',
   },
   textArea: {
     minHeight: 100,
     textAlignVertical: 'top',
   },
   charCount: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: isSmallDevice ? 11 : 12,
+    color: '#636E72',
     textAlign: 'right',
     marginTop: 4,
   },
@@ -243,33 +266,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 8,
+    gap: 12,
   },
   button: {
     flex: 1,
-    padding: 15,
+    padding: isSmallDevice ? 14 : 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginHorizontal: 6,
+    justifyContent: 'center',
+    minHeight: 50,
   },
   cancelButton: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#DFE6E9',
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0984E3',
+    shadowColor: '#0984E3',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#B2BEC3',
+    shadowOpacity: 0,
+    elevation: 0,
+    borderColor: '#B2BEC3',
   },
   cancelButtonText: {
-    color: '#333',
-    fontSize: 16,
+    color: '#636E72',
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: '600',
   },
   submitButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: '600',
   },
   modalOverlay: {
@@ -280,51 +313,63 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 24,
     width: '100%',
     maxWidth: 320,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DFE6E9',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: isSmallDevice ? 18 : 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#E74C3C',
     marginBottom: 12,
     textAlign: 'center',
   },
   successModalTitle: {
-    fontSize: 20,
+    fontSize: isSmallDevice ? 18 : 20,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: '#27AE60',
     marginBottom: 12,
     textAlign: 'center',
   },
   modalMessage: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: isSmallDevice ? 14 : 16,
+    color: '#636E72',
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 22,
   },
   modalButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0984E3',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     minWidth: 120,
+    shadowColor: '#0984E3',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   successModalButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#27AE60',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     minWidth: 120,
+    shadowColor: '#27AE60',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   modalButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: isSmallDevice ? 14 : 16,
     fontWeight: 'bold',
     textAlign: 'center',
   },
