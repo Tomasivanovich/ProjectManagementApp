@@ -18,7 +18,10 @@ const TaskDetail = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { taskId } = route.params;
+  // route.params may be undefined when navigated from another navigator.
+  // Use optional chaining to avoid runtime errors and provide a clear
+  // missing-id error state.
+  const taskId = route.params?.taskId ?? null;
 
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +31,10 @@ const TaskDetail = () => {
   const loadTask = async () => {
     try {
       setError(null);
+      if (!taskId) {
+        setError('ID de tarea faltante');
+        return;
+      }
       // Nota: Necesitarías crear este endpoint en tu backend
       // Por ahora usamos el endpoint de lista y filtramos
       const response = await tasksService.getTask(taskId);
@@ -52,7 +59,13 @@ const TaskDetail = () => {
   // NUEVA FUNCIÓN: Volver al detalle del proyecto
   const handleBackToProject = () => {
     if (task && task.id_proyecto) {
-      navigation.navigate('ProjectDetail', { projectId: task.id_proyecto });
+      // ProjectDetail lives inside the Projects tab navigator. Navigate to
+      // the Projects tab and then to the ProjectDetail screen so the stack
+      // is mounted properly.
+      navigation.navigate('ProjectsTab', {
+        screen: 'ProjectDetail',
+        params: { projectId: task.id_proyecto },
+      });
     } else {
       navigation.goBack();
     }

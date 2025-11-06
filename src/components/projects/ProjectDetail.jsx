@@ -12,6 +12,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import projectsService from "../../services/projects";
 import tasksService from "../../services/tasks";
 import { useAuth } from "../../contexts/AuthContext";
+import { useProject } from "../../contexts/ProjectContext";
 import Loading from "../common/Loading";
 import ErrorMessage from "../common/ErrorMessage";
 
@@ -27,6 +28,8 @@ const ProjectDetail = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
+  const { setSelectedProject } = useProject();
+
   const loadProjectData = async () => {
     try {
       setError(null);
@@ -36,6 +39,10 @@ const ProjectDetail = () => {
       ]);
 
       setProject(projectResponse.data);
+      // Keep a reference to the currently selected project in context so other
+      // screens (like TaskList) can show project-specific views when opened
+      // via the main tab bar.
+      setSelectedProject(projectResponse.data);
       setTasks(tasksResponse.data);
     } catch (err) {
       setError(err.message);
@@ -94,8 +101,8 @@ const ProjectDetail = () => {
     return (
       user.rol_global === "admin" ||
       project?.id_creador === user.id ||
-      project?.usuarios?.find((u) => u.id_usuario === user.id)
-        ?.rol_proyecto === "creador"
+      project?.usuarios?.find((u) => u.id_usuario === user.id)?.rol_proyecto ===
+        "creador"
     );
   };
 
@@ -103,10 +110,10 @@ const ProjectDetail = () => {
     return (
       user.rol_global === "admin" ||
       project?.id_creador === user.id_usuario ||
-      project?.usuarios?.find((u) => u.id_usuario === user.id)
-        ?.rol_proyecto === "lider" ||
-      project?.usuarios?.find((u) => u.id_usuario === user.id)
-        ?.rol_proyecto === "creador" 
+      project?.usuarios?.find((u) => u.id_usuario === user.id)?.rol_proyecto ===
+        "lider" ||
+      project?.usuarios?.find((u) => u.id_usuario === user.id)?.rol_proyecto ===
+        "creador"
     );
   };
 

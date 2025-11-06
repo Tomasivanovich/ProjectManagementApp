@@ -89,11 +89,19 @@ const CreateTask = () => {
 
     setLoading(true);
     try {
-      await tasksService.createTask({
-        ...formData,
-        id_proyecto: parseInt(projectId),
-        id_asignado: parseInt(id_asignado),
-      });
+      // Build payload carefully: don't send empty strings for optional fields
+      const payload = {
+        titulo: titulo.trim(),
+        descripcion: descripcion.trim(),
+        id_proyecto: parseInt(projectId, 10),
+        id_asignado: parseInt(id_asignado, 10),
+      };
+
+      if (formData.fecha_vencimiento && formData.fecha_vencimiento.trim()) {
+        payload.fecha_vencimiento = formData.fecha_vencimiento.trim();
+      }
+
+      await tasksService.createTask(payload);
 
       // Mostrar modal de éxito
       setSuccessModalVisible(true);

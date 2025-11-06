@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   TouchableOpacity,
   Text,
@@ -6,70 +6,105 @@ import {
   View,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { useAuth } from '../../contexts/AuthContext';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import Constants from 'expo-constants';
+  Platform,
+} from "react-native";
+import { useAuth } from "../../contexts/AuthContext";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import Constants from "expo-constants";
+import * as AuthSession from "expo-auth-session";
 
 WebBrowser.maybeCompleteAuthSession();
 
 const GoogleLoginButton = () => {
   const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
+  const responseProcessed = useRef(false);
 
-  // Obtener configuración desde app.config.js
   const googleConfig = Constants.expoConfig?.extra?.google;
 
+  // ✅ CONFIGURACIÓN ÚNICA PARA AMBAS PLATAFORMAS
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: googleConfig?.expoClientId,
-    iosClientId: googleConfig?.iosClientId,
-    androidClientId: googleConfig?.androidClientId,
     webClientId: googleConfig?.webClientId,
-    scopes: ['openid', 'profile', 'email'],
+    androidClientId: googleConfig?.androidClientId,
+    scopes: ["openid", "profile", "email"],
   });
 
+  // ✅ EFECTO ÚNICO PARA PROCESAR RESPUESTA
   useEffect(() => {
-    if (response?.type === 'success') {
-      const { authentication } = response;
-      handleGoogleSignIn(authentication.accessToken);
-    } else if (response?.type === 'error') {
-      console.error('Google OAuth Error:', response.error);
-      Alert.alert('Error', 'No se pudo completar el inicio de sesión con Google');
+    console.log("🔄 [Universal] RESPONSE:", response?.type);
+    
+    if (responseProcessed.current) return;
+
+    if (response?.type === "success") {
+      responseProcessed.current = true;
+      
+      let accessToken;
+      
+      if (Platform.OS === "web") {
+        // Para web
+        accessToken = response.authentication?.accessToken || response.params?.access_token;
+      } else {
+        // Para Android/iOS
+        accessToken = response.authentication?.accessToken;
+      }
+
+      console.log("🔑 [Universal] Token:", accessToken ? accessToken.substring(0, 20) + "..." : "NO ENCONTRADO");
+
+      if (accessToken) {
+        handleGoogleSignIn(accessToken);
+      } else {
+        console.error("❌ [Universal] No se pudo extraer token");
+        Alert.alert("Error", "No se pudo obtener el token de acceso");
+        setLoading(false);
+        responseProcessed.current = false;
+      }
+    } else if (response?.type === "error") {
+      console.error("❌ [Universal] Error:", response.error);
+      Alert.alert("Error", `Error: ${response.error?.message || response.error}`);
       setLoading(false);
+      responseProcessed.current = false;
     }
   }, [response]);
 
-  const handleGoogleSignIn = async (accessToken) => {
-    try {
-      await loginWithGoogle(accessToken);
-    } catch (error) {
-      console.error('Error en login con Google:', error);
-      Alert.alert('Error', error.message || 'Error al iniciar sesión con Google');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ✅ FUNCIÓN ÚNICA PARA MANEJAR EL LOGIN
   const handlePress = async () => {
+    if (!request) {
+      Alert.alert("Error", "Google OAuth no está configurado");
+      return;
+    }
+
+    console.log("🚀 [Universal] Iniciando login...");
     setLoading(true);
+    responseProcessed.current = false;
+
     try {
       await promptAsync();
     } catch (error) {
-      console.error('Error al abrir Google OAuth:', error);
-      Alert.alert('Error', 'No se pudo abrir la ventana de autenticación');
+      console.error("💥 [Universal] Error en promptAsync:", error);
+      Alert.alert("Error", "No se pudo conectar con Google");
       setLoading(false);
+      responseProcessed.current = false;
     }
   };
 
-  // Verificar si la configuración está disponible
-  if (!googleConfig || !googleConfig.androidClientId) {
-    return (
-      <TouchableOpacity style={[styles.button, styles.buttonDisabled]} disabled={true}>
-        <Text style={styles.buttonText}>Google OAuth no configurado</Text>
-      </TouchableOpacity>
-    );
-  }
+  // ✅ FUNCIÓN PARA PROCESAR EL TOKEN
+  const handleGoogleSignIn = async (accessToken) => {
+    try {
+      console.log("🔐 [Button] Iniciando login con token...");
+      await loginWithGoogle(accessToken);
+      console.log("✅ [Button] Login completado exitosamente");
+    } catch (error) {
+      console.error("❌ [Button] Error:", error);
+      Alert.alert("Error", error.message || "Error al iniciar sesión con Google");
+    } finally {
+      setLoading(false);
+      // Reset después de un delay para evitar problemas
+      setTimeout(() => {
+        responseProcessed.current = false;
+      }, 1000);
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -93,41 +128,41 @@ const GoogleLoginButton = () => {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#DB4437',
+    backgroundColor: "#DB4437",
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#C1351D',
+    borderColor: "#C1351D",
     minHeight: 50,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   buttonDisabled: {
-    backgroundColor: '#CCCCCC',
-    borderColor: '#999999',
+    backgroundColor: "#CCCCCC",
+    borderColor: "#999999",
   },
   buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   icon: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginRight: 12,
-    backgroundColor: 'white',
-    color: '#DB4437',
+    backgroundColor: "white",
+    color: "#DB4437",
     width: 24,
     height: 24,
     borderRadius: 12,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 22,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

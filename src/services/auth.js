@@ -1,5 +1,4 @@
 import api from './api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class AuthService {
   async register(userData) {
@@ -20,7 +19,7 @@ class AuthService {
     }
   }
 
-  // Nuevas funciones para OAuth
+  // ✅ CORREGIDO: Usa la ruta correcta y envía los datos apropiados
   async loginWithGoogle(accessToken) {
     try {
       const response = await api.post('/auth/google', {
@@ -28,6 +27,7 @@ class AuthService {
       });
       return response;
     } catch (error) {
+      console.error("❌ [AuthService] Error en loginWithGoogle:", error);
       throw error;
     }
   }
@@ -50,12 +50,6 @@ class AuthService {
     } catch (error) {
       throw error;
     }
-  }
-
-  async logout() {
-    // Limpiar token del almacenamiento
-    await AsyncStorage.removeItem('userToken');
-    await AsyncStorage.removeItem('userData');
   }
 }
 

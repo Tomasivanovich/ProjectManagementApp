@@ -9,7 +9,8 @@ export default {
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
-    scheme: "projectapp",
+    // ✅ SCHEME CORRECTO para que Google pueda redirigir a tu app
+    scheme: "com.tomas.project", // O "projectapp" si prefieres
     splash: {
       image: "./assets/splash-icon.png",
       resizeMode: "contain",
@@ -20,17 +21,25 @@ export default {
       bundleIdentifier: "com.tomas.project"
     },
     android: {
+      package: "com.tomas.project",
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
       edgeToEdgeEnabled: true,
-      package: "com.tomas.project",
-      config: {
-        googleSignIn: {
-          certificateHash: "2E:25:54:1B:65:C9:AB:21:1A:EF:53:17:A0:60:21:CE:4E:0F:09:66"
+      // ✅ INTENT FILTER para Android
+      intentFilters: [
+        {
+          action: "VIEW",
+          data: [
+            {
+              scheme: "com.tomas.project", // DEBE coincidir con el scheme de arriba
+              host: "auth"
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
         }
-      }
+      ]
     },
     web: {
       favicon: "./assets/favicon.png"
@@ -39,14 +48,13 @@ export default {
       "expo-font",
       "expo-web-browser"
     ],
-    // AGREGAR ESTA SECCIÓN ↓
     extra: {
       eas: {
         projectId: "29a2cfe5-4915-4908-a18c-585f53e5c56f"
       },
       google: {
         androidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID,
-        iosClientId: process.env.GOOGLE_WEB_CLIENT_ID,
+        iosClientId: process.env.GOOGLE_IOS_CLIENT_ID,
         webClientId: process.env.GOOGLE_WEB_CLIENT_ID,
         expoClientId: process.env.GOOGLE_WEB_CLIENT_ID
       }

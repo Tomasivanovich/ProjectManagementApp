@@ -12,6 +12,7 @@ import {
 import { useRoute, useNavigation } from '@react-navigation/native';
 import tasksService from '../../services/tasks';
 import { useAuth } from '../../contexts/AuthContext';
+import { useProject } from '../../contexts/ProjectContext';
 import Loading from '../common/Loading';
 import ErrorMessage from '../common/ErrorMessage';
 import TaskCard from './TaskCard';
@@ -20,7 +21,11 @@ const TaskList = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { projectId } = route.params;
+  // route.params may be undefined when this screen is mounted directly.
+  // Use optional chaining and a safe default to avoid destructuring errors.
+  const { selectedProject } = useProject();
+  // Prefer explicit route param, otherwise fall back to the globally selected project.
+  const projectId = route.params?.projectId ?? selectedProject?.id_proyecto ?? null;
 
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
@@ -33,6 +38,14 @@ const TaskList = () => {
   const loadTasks = async () => {
     try {
       setError(null);
+      // If there's no projectId, avoid calling the API and show an informative state.
+      if (!projectId) {
+        setTasks([]);
+        setFilteredTasks([]);
+        setError('No se ha seleccionado un proyecto.');
+        return;
+      }
+
       const response = await tasksService.getProjectTasks(projectId);
       setTasks(response.data);
       filterTasks(response.data, searchTerm, statusFilter);
@@ -214,7 +227,13 @@ const TaskList = () => {
       {/* Botón Flotante para Crear Tarea */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('CreateTask', { projectId })}
+        onPress={() => {
+          if (projectId) {
+            navigation.navigate('CreateTask', { projectId });
+          } else {
+            Alert.alert('Seleccionar proyecto', 'No se ha seleccionado un proyecto.');
+          }
+        }}
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>

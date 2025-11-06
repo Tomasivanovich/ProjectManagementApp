@@ -78,8 +78,6 @@ const LoginScreen = ({ navigation }) => {
 
           <GoogleLoginButton></GoogleLoginButton>
 
-          <DiscordLoginButton></DiscordLoginButton>
-
           <TouchableOpacity
             style={styles.linkButton}
             onPress={() => navigation.navigate('Register')}
@@ -111,12 +109,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#000000ff',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#000000ff',
   },
   form: {
     width: '100%',
@@ -128,6 +126,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#ddd',
+    color: 'black', // Añadir color de texto negro
   },
   button: {
     backgroundColor: '#007AFF',
