@@ -66,6 +66,7 @@ const ProjectDetail = () => {
   };
 
   const handleManageMembers = () => {
+    console.log("Navegando a ProjectMembers con projectId:", projectId);
     navigation.navigate("ProjectMembers", { projectId });
   };
 

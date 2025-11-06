@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 class TasksService {
   async getProjectTasks(projectId) {
@@ -6,22 +6,35 @@ class TasksService {
   }
 
   async getTask(taskId) {
-    // Nota: Necesitarías crear este endpoint en tu backend
-    // Por ahora simulamos obteniendo todas las tareas y filtrando
-    const response = await api.get('/tasks/proyecto/0'); // Esto debería ser un endpoint específico
-    return { data: response.data.find(task => task.id_tarea === taskId) };
+    return await api.get(`/tasks/${taskId}`);
   }
 
   async createTask(taskData) {
-    return await api.post('/tasks', taskData);
+    return await api.post("/tasks", taskData);
   }
 
   async updateTask(taskId, taskData) {
     return await api.put(`/tasks/${taskId}`, taskData);
   }
 
+  // CORREGIDO: Cambiar el nombre del método para que coincida con el endpoint
   async updateTaskStatus(taskId, statusData) {
     return await api.patch(`/tasks/${taskId}/completar`, statusData);
+  }
+
+  // O si el endpoint espera PUT en lugar de PATCH:
+  async updateTaskStatusAlternative(taskId, statusData) {
+    return await api.put(`/tasks/${taskId}/status`, statusData);
+  }
+
+  async uploadFile(taskId, file) {
+    const formData = new FormData();
+    formData.append("archivo", file);
+    return await api.post(`/tasks/${taskId}/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
   }
 
   async deleteTask(taskId) {

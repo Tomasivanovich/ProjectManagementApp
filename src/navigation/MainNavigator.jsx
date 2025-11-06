@@ -17,6 +17,7 @@ import ProfileScreen from '../components/users/ProfileScreen';
 import EditProfile from '../components/users/EditProfile';
 import UserList from '../components/users/UserList';
 import Header from '../components/common/Header';
+import EditTask from '../components/tasks/EditTask';
 
 const Tab = createBottomTabNavigator();
 const ProjectStack = createNativeStackNavigator();
@@ -54,7 +55,8 @@ const TaskStackNavigator = () => (
         <Header
           title={
             route.name === 'TaskDetail' ? 'Detalle Tarea' : 
-            route.name === 'CreateTask' ? 'Crear Tarea' : 'Tareas'
+            route.name === 'CreateTask' ? 'Crear Tarea' : 
+            route.name === 'EditTask' ? 'Editar Tarea' : 'Tareas'
           }
           showBack={route.name !== 'TaskList'}
         />
@@ -63,6 +65,7 @@ const TaskStackNavigator = () => (
   >
     <TaskStack.Screen name="TaskList" component={TaskList} />
     <TaskStack.Screen name="TaskDetail" component={TaskDetail} />
+    <TaskStack.Screen name="EditTask" component={EditTask} />
     <TaskStack.Screen name="CreateTask" component={CreateTask} />
   </TaskStack.Navigator>
 );

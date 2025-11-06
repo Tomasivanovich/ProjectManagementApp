@@ -2,8 +2,8 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: "Project",
-    slug: "Project",
+    name: "P.M.A",
+    slug: "Project Management App",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",

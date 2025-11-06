@@ -19,6 +19,8 @@ const ProjectMembers = () => {
   const { user } = useAuth();
   const { projectId } = route.params;
 
+  console.log("ProjectMembers - projectId:", projectId);
+
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -56,9 +58,11 @@ const ProjectMembers = () => {
       console.log("No hay proyecto o usuario");
       return false;
     }
-    
-    const userId = user.id; 
+
+    const userId = user.id_usuario;
     const projectCreatorId = project.id_creador;
+
+    console.log("userId:", userId, "projectCreatorId:", projectCreatorId);
 
     if (!userId) {
       console.log("No se pudo encontrar el ID del usuario");
@@ -67,6 +71,8 @@ const ProjectMembers = () => {
 
     const isAdmin = user.rol_global === "admin";
     const isProjectCreator = Number(projectCreatorId) === Number(userId);
+
+    console.log("isAdmin:", isAdmin, "isProjectCreator:", isProjectCreator);
 
     return isAdmin || isProjectCreator;
   };
@@ -95,7 +101,8 @@ const ProjectMembers = () => {
       setInviteData({ email: "", rol_proyecto: "colaborador" });
       loadProject();
     } catch (error) {
-      showMessage("Error", error.message || "Error al enviar la invitación");
+      // Aquí error.message ya debe tener el mensaje del backend
+      showMessage("Error", error.message);
     }
   };
 

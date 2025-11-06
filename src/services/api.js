@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = 'https://projectmanagementappapi.onrender.com/api';
+const API_BASE_URL = "https://projectmanagementappapi.onrender.com/api";
 
 class ApiService {
   constructor() {
@@ -9,13 +9,13 @@ class ApiService {
 
   async getHeaders(includeAuth = true) {
     const headers = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
 
     if (includeAuth) {
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await AsyncStorage.getItem("userToken");
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers["Authorization"] = `Bearer ${token}`;
       }
     }
 
@@ -24,23 +24,48 @@ class ApiService {
 
   async handleResponse(response) {
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error en la solicitud');
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: "Error desconocido" };
+      }
+      // Crear un error con más información
+      const error = new Error(errorData.message || "Error en la solicitud");
+      error.status = response.status;
+      error.data = errorData;
+      throw error;
     }
     return response.json();
   }
 
   async get(endpoint) {
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'GET',
-      headers: await this.getHeaders(),
+    const url = `${this.baseURL}${endpoint}`;
+    const headers = await this.getHeaders();
+
+    console.log("API Request:", {
+      url,
+      headers,
+      method: "GET",
     });
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: headers,
+    });
+
+    console.log("API Response:", {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
+    });
+
     return this.handleResponse(response);
   }
 
   async post(endpoint, data) {
     const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'POST',
+      method: "POST",
       headers: await this.getHeaders(),
       body: JSON.stringify(data),
     });
@@ -49,7 +74,7 @@ class ApiService {
 
   async put(endpoint, data) {
     const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'PUT',
+      method: "PUT",
       headers: await this.getHeaders(),
       body: JSON.stringify(data),
     });
@@ -58,7 +83,7 @@ class ApiService {
 
   async patch(endpoint, data) {
     const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: await this.getHeaders(),
       body: JSON.stringify(data),
     });
@@ -67,7 +92,7 @@ class ApiService {
 
   async delete(endpoint, data = null) {
     const options = {
-      method: 'DELETE',
+      method: "DELETE",
       headers: await this.getHeaders(),
     };
 

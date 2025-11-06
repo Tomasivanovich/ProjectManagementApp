@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,14 +8,14 @@ import {
   RefreshControl,
   TextInput,
   Alert,
-} from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
-import tasksService from '../../services/tasks';
-import { useAuth } from '../../contexts/AuthContext';
-import { useProject } from '../../contexts/ProjectContext';
-import Loading from '../common/Loading';
-import ErrorMessage from '../common/ErrorMessage';
-import TaskCard from './TaskCard';
+} from "react-native";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import tasksService from "../../services/tasks";
+import { useAuth } from "../../contexts/AuthContext";
+import { useProject } from "../../contexts/ProjectContext";
+import Loading from "../common/Loading";
+import ErrorMessage from "../common/ErrorMessage";
+import TaskCard from "./TaskCard";
 
 const TaskList = () => {
   const route = useRoute();
@@ -25,15 +25,16 @@ const TaskList = () => {
   // Use optional chaining and a safe default to avoid destructuring errors.
   const { selectedProject } = useProject();
   // Prefer explicit route param, otherwise fall back to the globally selected project.
-  const projectId = route.params?.projectId ?? selectedProject?.id_proyecto ?? null;
+  const projectId =
+    route.params?.projectId ?? selectedProject?.id_proyecto ?? null;
 
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
 
   const loadTasks = async () => {
     try {
@@ -42,7 +43,7 @@ const TaskList = () => {
       if (!projectId) {
         setTasks([]);
         setFilteredTasks([]);
-        setError('No se ha seleccionado un proyecto.');
+        setError("No se ha seleccionado un proyecto.");
         return;
       }
 
@@ -62,16 +63,17 @@ const TaskList = () => {
 
     // Filtrar por búsqueda
     if (search) {
-      filtered = filtered.filter(task =>
-        task.titulo.toLowerCase().includes(search.toLowerCase()) ||
-        task.descripcion.toLowerCase().includes(search.toLowerCase()) ||
-        task.asignado_nombre.toLowerCase().includes(search.toLowerCase())
+      filtered = filtered.filter(
+        (task) =>
+          task.titulo.toLowerCase().includes(search.toLowerCase()) ||
+          task.descripcion.toLowerCase().includes(search.toLowerCase()) ||
+          task.asignado_nombre.toLowerCase().includes(search.toLowerCase())
       );
     }
 
     // Filtrar por estado
-    if (status !== 'todos') {
-      filtered = filtered.filter(task => task.estado === status);
+    if (status !== "todos") {
+      filtered = filtered.filter((task) => task.estado === status);
     }
 
     setFilteredTasks(filtered);
@@ -91,56 +93,68 @@ const TaskList = () => {
   };
 
   const handleTaskPress = (task) => {
-    navigation.navigate('TaskDetail', { taskId: task.id_tarea });
+    navigation.navigate("TaskDetail", {
+      taskId: task.id_tarea,
+      projectRole: task.rol_proyecto, // ← Asegúrate de que esto esté en la tarea
+    });
   };
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
       await tasksService.updateTaskStatus(taskId, { estado: newStatus });
       // Actualizar la lista localmente
-      setTasks(prev => prev.map(task =>
-        task.id_tarea === taskId ? { ...task, estado: newStatus } : task
-      ));
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id_tarea === taskId ? { ...task, estado: newStatus } : task
+        )
+      );
     } catch (error) {
-      Alert.alert('Error', error.message || 'Error al actualizar la tarea');
+      Alert.alert("Error", error.message || "Error al actualizar la tarea");
     }
   };
 
   const handleDeleteTask = (taskId) => {
     Alert.alert(
-      'Eliminar Tarea',
-      '¿Estás seguro de que quieres eliminar esta tarea?',
+      "Eliminar Tarea",
+      "¿Estás seguro de que quieres eliminar esta tarea?",
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: "Cancelar", style: "cancel" },
         {
-          text: 'Eliminar',
-          style: 'destructive',
+          text: "Eliminar",
+          style: "destructive",
           onPress: async () => {
             try {
               await tasksService.deleteTask(taskId);
-              setTasks(prev => prev.filter(task => task.id_tarea !== taskId));
-              Alert.alert('Éxito', 'Tarea eliminada correctamente');
+              setTasks((prev) =>
+                prev.filter((task) => task.id_tarea !== taskId)
+              );
+              Alert.alert("Éxito", "Tarea eliminada correctamente");
             } catch (error) {
-              Alert.alert('Error', error.message || 'Error al eliminar la tarea');
+              Alert.alert(
+                "Error",
+                error.message || "Error al eliminar la tarea"
+              );
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   const canEditTask = (task) => {
-    return user.rol_global === 'admin' || 
-           task.id_creador === user.id_usuario ||
-           task.rol_proyecto === 'lider' ||
-           task.rol_proyecto === 'creador';
+    return (
+      user.rol_global === "admin" ||
+      task.id_creador === user.id_usuario ||
+      task.rol_proyecto === "lider" ||
+      task.rol_proyecto === "creador"
+    );
   };
 
   const statusOptions = [
-    { value: 'todos', label: 'Todos', color: '#95A5A6' },
-    { value: 'pendiente', label: 'Pendiente', color: '#F44336' },
-    { value: 'en progreso', label: 'En Progreso', color: '#FF9800' },
-    { value: 'completada', label: 'Completada', color: '#4CAF50' },
+    { value: "todos", label: "Todos", color: "#95A5A6" },
+    { value: "pendiente", label: "Pendiente", color: "#F44336" },
+    { value: "en progreso", label: "En Progreso", color: "#FF9800" },
+    { value: "completada", label: "Completada", color: "#4CAF50" },
   ];
 
   if (loading && !refreshing) {
@@ -148,12 +162,7 @@ const TaskList = () => {
   }
 
   if (error && !refreshing) {
-    return (
-      <ErrorMessage 
-        message={error} 
-        onRetry={loadTasks}
-      />
-    );
+    return <ErrorMessage message={error} onRetry={loadTasks} />;
   }
 
   return (
@@ -166,7 +175,7 @@ const TaskList = () => {
           value={searchTerm}
           onChangeText={setSearchTerm}
         />
-        
+
         <FlatList
           horizontal
           data={statusOptions}
@@ -175,14 +184,17 @@ const TaskList = () => {
               style={[
                 styles.statusFilter,
                 { backgroundColor: item.color },
-                statusFilter === item.value && styles.statusFilterSelected
+                statusFilter === item.value && styles.statusFilterSelected,
               ]}
               onPress={() => setStatusFilter(item.value)}
             >
-              <Text style={[
-                styles.statusFilterText,
-                statusFilter === item.value && styles.statusFilterTextSelected
-              ]}>
+              <Text
+                style={[
+                  styles.statusFilterText,
+                  statusFilter === item.value &&
+                    styles.statusFilterTextSelected,
+                ]}
+              >
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -200,7 +212,9 @@ const TaskList = () => {
           <TaskCard
             task={item}
             onPress={() => handleTaskPress(item)}
-            onStatusChange={(newStatus) => handleStatusChange(item.id_tarea, newStatus)}
+            onStatusChange={(newStatus) =>
+              handleStatusChange(item.id_tarea, newStatus)
+            }
             onDelete={() => handleDeleteTask(item.id_tarea)}
             canEdit={canEditTask(item)}
             currentUserId={user.id_usuario}
@@ -212,13 +226,15 @@ const TaskList = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#007AFF']}
+            colors={["#007AFF"]}
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
-              {tasks.length === 0 ? 'No hay tareas en este proyecto' : 'No se encontraron tareas'}
+              {tasks.length === 0
+                ? "No hay tareas en este proyecto"
+                : "No se encontraron tareas"}
             </Text>
           </View>
         }
@@ -229,9 +245,12 @@ const TaskList = () => {
         style={styles.fab}
         onPress={() => {
           if (projectId) {
-            navigation.navigate('CreateTask', { projectId });
+            navigation.navigate("CreateTask", { projectId });
           } else {
-            Alert.alert('Seleccionar proyecto', 'No se ha seleccionado un proyecto.');
+            Alert.alert(
+              "Seleccionar proyecto",
+              "No se ha seleccionado un proyecto."
+            );
           }
         }}
       >
@@ -244,16 +263,16 @@ const TaskList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   filtersSection: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   searchInput: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
@@ -274,47 +293,47 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.05 }],
   },
   statusFilterText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   statusFilterTextSelected: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   listContent: {
     padding: 16,
     paddingBottom: 80,
   },
   emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
   },
   fabText: {
-    color: 'white',
+    color: "white",
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 

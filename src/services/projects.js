@@ -1,8 +1,8 @@
-import api from './api';
+import api from "./api";
 
 class ProjectsService {
   async getProjects() {
-    return await api.get('/projects');
+    return await api.get("/projects");
   }
 
   async getProject(id) {
@@ -10,7 +10,7 @@ class ProjectsService {
   }
 
   async createProject(projectData) {
-    return await api.post('/projects', projectData);
+    return await api.post("/projects", projectData);
   }
 
   async updateProject(id, projectData) {
@@ -21,13 +21,27 @@ class ProjectsService {
     return await api.delete(`/projects/${id}`);
   }
 
-  async inviteUser(projectId, email, role) {
-    return await api.post(`/projects/${projectId}/invite`, {
-      email,
-      rol_proyecto: role,
-    });
+  async inviteUser(projectId, email, rol_proyecto) {
+    try {
+      const response = await api.post(`/projects/${projectId}/invite`, {
+        email,
+        rol_proyecto,
+      });
+      return response;
+    } catch (error) {
+      // Ahora el error tiene status y data
+      let errorMessage = "Error al enviar la invitación";
+      if (error.data) {
+        // Si hay errores de validación, unirlos
+        if (error.data.errors && Array.isArray(error.data.errors)) {
+          errorMessage = error.data.errors.map((e) => e.msg).join(", ");
+        } else if (error.data.message) {
+          errorMessage = error.data.message;
+        }
+      }
+      throw new Error(errorMessage);
+    }
   }
-
   async updateUserRole(projectId, userId, role) {
     return await api.patch(`/projects/${projectId}/role`, {
       id_usuario: userId,
@@ -42,7 +56,9 @@ class ProjectsService {
   }
 
   async searchUsers(projectId, searchTerm) {
-    return await api.get(`/projects/${projectId}/users/search?search=${searchTerm}`);
+    return await api.get(
+      `/projects/${projectId}/users/search?search=${searchTerm}`
+    );
   }
 }
 

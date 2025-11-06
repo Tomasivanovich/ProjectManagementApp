@@ -12,16 +12,4 @@ export const oauthService = {
       throw new Error(error.response?.data?.message || 'Error al autenticar con Google');
     }
   },
-
-  // Autenticación con Discord
-  loginWithDiscord: async (accessToken) => {
-    try {
-      const response = await api.post('/auth/discord', {
-        access_token: accessToken
-      });
-      return response.data;
-    } catch (error) {
-      throw new Error(error.response?.data?.message || 'Error al autenticar con Discord');
-    }
-  }
 };
