@@ -1,14 +1,14 @@
-Gestor de Proyectos y Tareas
+# Gestor de Proyectos y Tareas
 Una aplicación móvil desarrollada con React Native y Expo para la gestión eficiente de proyectos y tareas en equipo.
 
-Características
+# Características
   Autenticación y Seguridad
   Login con Google OAuth
   Autenticación segura con JWT
   Gestión de sesiones de usuario
   Pantallas de carga y manejo de errores
 
-Gestión de Proyectos
+# Gestión de Proyectos
   Crear y editar proyectos
   Gestionar miembros del proyecto
   Lista de proyectos con detalles
@@ -20,13 +20,13 @@ Gestión de Proyectos
   Estados: Pendiente, En Progreso, Completada
   Descripciones detalladas
 
-Gestión de Usuarios
+# Gestión de Usuarios
   Edición de perfil personal
   Visualización de perfiles
   Lista de usuarios del sistema
   Roles globales de usuario
 
-Tecnologías Utilizadas
+# Tecnologías Utilizadas
   Frontend: React Native, Expo
 
   Navegación: React Navigation
@@ -39,9 +39,8 @@ Tecnologías Utilizadas
 
   Plataforma: Android, iOS
 
-  # Estructura de projecto
+# Estructura de projecto
 
-text
 src/
 ├── components/
 │   ├── auth/                 # Componentes de autenticación
@@ -91,7 +90,7 @@ src/
     ├── constants.js
     └── helpers.js
 
-Instalación y Configuración
+# Instalación y Configuración
 Prerrequisitos
   Node.js (versión 16 o superior)
 
@@ -102,7 +101,7 @@ Prerrequisitos
   Cuenta de Expo
 
 
-Pasos de instalación
+# Pasos de instalación
   Clonar el repositorio
   
   git clone [url-del-repositorio]
@@ -133,7 +132,7 @@ Ejecutar la aplicación
   # iOS
   expo start --ios
 
-Funcionalidades Principales
+# Funcionalidades Principales
 Autenticación
 Registro e inicio de sesión
 
@@ -168,7 +167,7 @@ Visualización de actividades
 
 Gestión de preferencias
 
-Configuración de Desarrollo
+# Configuración de Desarrollo
 Estructura de Contextos
 AuthContext: Manejo de autenticación y sesiones
 
@@ -207,14 +206,8 @@ const theme = {
     error: '#E74C3C'
   }
 }
-Estilos
-Los estilos están centralizados en src/styles/:
 
-common.js: Estilos base y componentes comunes
-
-themes.js: Definiciones de temas
-
-Build y Deploy
+# Build y Deploy
 Desarrollo
 expo start --tunnel
 Build para producción
