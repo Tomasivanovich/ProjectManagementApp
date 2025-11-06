@@ -39,7 +39,7 @@ Tecnologías Utilizadas
 
   Plataforma: Android, iOS
 
-  Estructura del Proyecto
+  #Estructura del Proyecto
 
 text
 src/
