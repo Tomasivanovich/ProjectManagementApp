@@ -200,7 +200,6 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     loginWithGoogle,
-    loginWithDiscord,
     isAuthenticated: !!user && !!token,
   };
 
